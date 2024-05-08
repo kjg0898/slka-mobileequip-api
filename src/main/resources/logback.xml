@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- 콘솔에 출력되는 로그의 형식을 정의하는 패턴 -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level [%thread] %logger{36}.%M:%L - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 어플리케이션의 기본 로그 레벨과 appender 설정 -->
+    <root level="info">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>
