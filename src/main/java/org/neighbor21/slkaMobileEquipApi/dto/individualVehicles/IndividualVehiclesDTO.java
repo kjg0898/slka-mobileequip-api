@@ -6,9 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.sql.Time;
 import java.sql.Timestamp;
-import java.time.ZonedDateTime;
 
 /**
  * packageName    : org.neighbor21.slkaMobileEquipApi.dto.individualVehicles

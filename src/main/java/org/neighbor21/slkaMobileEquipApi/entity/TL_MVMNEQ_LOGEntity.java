@@ -1,6 +1,9 @@
 package org.neighbor21.slkaMobileEquipApi.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 import org.neighbor21.slkaMobileEquipApi.entity.compositeKey.TL_MVMNEQ_LOG_IdEntity;
@@ -41,13 +44,6 @@ public class TL_MVMNEQ_LOGEntity {
 
     @Column(name = "longitude", precision = 14, scale = 8)
     private BigDecimal longitude;  // 경도
-
-
-
-
-
-
-
 
 
 }

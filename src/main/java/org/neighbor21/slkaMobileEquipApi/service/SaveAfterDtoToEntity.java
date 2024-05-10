@@ -11,8 +11,6 @@ import org.neighbor21.slkaMobileEquipApi.entity.compositeKey.TL_MVMNEQ_LOG_IdEnt
 import org.neighbor21.slkaMobileEquipApi.entity.compositeKey.TL_MVMNEQ_PASS_IdEntity;
 import org.neighbor21.slkaMobileEquipApi.entity.compositeKey.TL_MVMNEQ_PERIOD_IdEntity;
 import org.neighbor21.slkaMobileEquipApi.jpaRepository.TL_MVMNEQ_CURRepository;
-import org.neighbor21.slkaMobileEquipApi.jpaRepository.TL_MVMNEQ_LOGRepository;
-import org.neighbor21.slkaMobileEquipApi.jpaRepository.TL_MVMNEQ_PASSRepository;
 import org.neighbor21.slkaMobileEquipApi.jpaRepository.TL_MVMNEQ_PERIODRepository;
 import org.neighbor21.slkaMobileEquipApi.service.util.VehicleUtils;
 import org.slf4j.Logger;
@@ -20,14 +18,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.dao.DataAccessException;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * packageName    : org.neighbor21.slkaMobileEquipApi.service.dtoToEntity
@@ -49,12 +43,10 @@ public class SaveAfterDtoToEntity {
     @Autowired
     private TL_MVMNEQ_CURRepository tlMvmneqCurRepository;
     @Autowired
-    private TL_MVMNEQ_LOGRepository tlMvmneqLogRepository;
-    @Autowired
-    private TL_MVMNEQ_PASSRepository tlMvmneqPassRepository;
-    @Autowired
     private TL_MVMNEQ_PERIODRepository tlMvmneqPeriodRepository;
 
+    @Autowired
+    private BatchService batchService;
 
     /*// 시스템 을 새롭게 시작하거나 재시작 했을때 프로그램 메모리 안에 이동형장비 설치위치 정보가 없기 때문에  업데이트 하고 이력을 삽입할때 중복값 비교를 하여 새로운 값에 대해서만 작동하지 않고
     // 중복값에 대해 처리될 것이기 때문에 초기 데이터(가장 최근에 적재된 이동형 장비 설치위치 테이블) 를 로드 하여 비교할수 있도록 엔티티에 넣어둔다.
@@ -89,10 +81,14 @@ public class SaveAfterDtoToEntity {
     //dto 에서 엔티티로 저장하기 전에 값을 비교 하는 방식으로 리소스 소모를 줄였다.
     @Transactional
     public void SiteLogServiceTL_MVMNEQ(List<ListSiteDTO> locations) {
-        for (ListSiteDTO location : locations) {
-            Timestamp currentTime = new Timestamp(System.currentTimeMillis());
+
+        List<TL_MVMNEQ_CUREntity> curEntities = new ArrayList<>();
+        List<TL_MVMNEQ_LOGEntity> logEntities = new ArrayList<>();
+
+        locations.forEach(location -> {
             try {
                 //설치 위치 관리 테이블 에서 장비아이디 값 조회 후 가져오기 없으면 새로 엔티티 객체 생성
+                //설치위치 관리 테이블 추가
                 TL_MVMNEQ_CUREntity tlMvmneqCurEntity = tlMvmneqCurRepository.findByEqpmntId(location.getAsset_management_id())
                         .orElse(new TL_MVMNEQ_CUREntity());
 
@@ -118,18 +114,16 @@ public class SaveAfterDtoToEntity {
                     //경도
                     tlMvmneqCurEntity.setLongitude(BigDecimal.valueOf(location.getLongitude()));
 
-                    ////*
-                    // todo for 문 밖에서 saveAll 사용하여 한번에 배치 처리
-                    ////*
-                    tlMvmneqCurRepository.save(tlMvmneqCurEntity);  //엔티티를 데이터베이스에 저장 , 장비 아이디 별로 업데이트
+                    curEntities.add(tlMvmneqCurEntity); //엔티티를 TL_MVMNEQ_CUREntity 리스트에 저장
                     logger.info("Successfully updated TL_MVMNEQ_CUR for Equipment ID {}: {}", location.getAsset_management_id(), tlMvmneqCurEntity);
+
 
                     //설치위치 이력 테이블 추가
                     TL_MVMNEQ_LOGEntity tlMvmneqLogEntity = new TL_MVMNEQ_LOGEntity();
                     TL_MVMNEQ_LOG_IdEntity logIdEntity = new TL_MVMNEQ_LOG_IdEntity();
 
                     //수집일시(현재시간), 설치 위치 아이디(복합키)
-                    logIdEntity.setCollectionDatetime(currentTime);
+                    logIdEntity.setCollectionDatetime(new Timestamp(System.currentTimeMillis()));
                     logIdEntity.setInstllcId(location.getSite_id().toString());
                     tlMvmneqLogEntity.setId(logIdEntity);
 
@@ -144,27 +138,30 @@ public class SaveAfterDtoToEntity {
                     //경도
                     tlMvmneqLogEntity.setLongitude(BigDecimal.valueOf(location.getLongitude()));
 
-                    ////*
-                    // todo for 문 밖에서 saveAll 사용하여 한번에 배치 처리
-                    ////*
-                    tlMvmneqLogRepository.save(tlMvmneqLogEntity); //엔티티를 데이터베이스에 저장 , 장비 아이디 별로 업데이트
+                    logEntities.add(tlMvmneqLogEntity); //엔티티를 TL_MVMNEQ_LOGEntity 리스트에 저장
                     logger.info("Successfully logged in TL_MVMNEQ_LOG for Equipment ID {}: {}", location.getAsset_management_id(), tlMvmneqLogEntity);
                 }
-            } catch (DataAccessException e) {
-                logger.error("Database access error during update of TL_MVMNEQ_CUR", e);
             } catch (Exception e) {
-                logger.error("Unexpected error during update of TL_MVMNEQ_CUR", e);
+                logger.error("Error during processing TL_MVMNEQ_CUR/LOG", e);
             }
+        });
+        // 배치 처리하여 한번에 리스트를 삽입한다.
+        try {
+            batchService.batchInsertWithRetry(curEntities);
+            batchService.batchInsertWithRetry(logEntities);
+            logger.info("Batch insert for TL_MVMNEQ_CUR and TL_MVMNEQ_LOG completed.");
+        } catch (Exception e) {
+            logger.error("Batch insert failed for TL_MVMNEQ_CUR/LOG", e);
         }
     }
-
 
     //이동형 장비 통과 차량 정보를 엔티티로 변환 후 테이블에 적재한다. 5분마다 실행되며, 이전 통과차량 시간정보를 파일에 저장한 후에 다시 그 시간을 읽어 그 다음 시간부터 조회한 정보를 db 에 저장한다.
     //api 에서 호출 할 당시부터 매개변수 값으로 조회 시간을 보내면서 중복값 호출을 방지 하였으므로 이곳에서는 전부 저장해도 무관하다.
     @Transactional
     public void insertTL_MVMNEQ_PASS(List<IndividualVehiclesDTO> vehicles) {
-        // todo 파일로 최근시간 가져올지, db 로 져올지는 생각 해봐야 함
-        for (IndividualVehiclesDTO vehicle : vehicles) {
+        List<TL_MVMNEQ_PASSEntity> passEntities = new ArrayList<>();
+        // todo 파일로 최근시간 가져올지, db 로 져올지는 생각 해봐야 함 , 일단은 파일로.
+        vehicles.forEach(vehicle -> {
             try {
                 Integer siteId = vehicle.getSiteId();
                 // 각 위치별 지난 통행 시간 또는 현재 시간
@@ -199,16 +196,18 @@ public class SaveAfterDtoToEntity {
                 // 현재 통과 시간을 마지막 통과 시간으로 업데이트
                 lastPassTimeMap.put(siteId, currentTimestamp);
 
-                ////*
-                // todo for 문 밖에서 saveAll 사용하여 한번에 배치 처리
-                ////*
-                tlMvmneqPassRepository.save(tlMvmneqPassEntity); //엔티티를 데이터베이스에 저장 , 장비 아이디 별로 업데이트
+                passEntities.add(tlMvmneqPassEntity); //엔티티를 TL_MVMNEQ_PASSEntity 리스트에 저장
                 logger.info("Successfully inserted TL_MVMNEQ_PASS for Vehicle at site {}: {}", vehicle.getSiteId(), tlMvmneqPassEntity);
-            } catch (DataAccessException e) {
-                logger.error("Database access error during insert of TL_MVMNEQ_PASS", e);
             } catch (Exception e) {
-                logger.error("Unexpected error during insert of TL_MVMNEQ_PASS", e);
+                logger.error("Error during processing TL_MVMNEQ_PASS", e);
             }
+        });
+
+        try {
+            batchService.batchInsertWithRetry(passEntities);
+            logger.info("Batch insert for TL_MVMNEQ_PASS completed.");
+        } catch (Exception e) {
+            logger.error("Batch insert failed for TL_MVMNEQ_PASS", e);
         }
     }
 
@@ -220,24 +219,25 @@ public class SaveAfterDtoToEntity {
     //순번에 들어가는 값은 starttime 을 기준으로 각각의 site_id 에 맞추어서 개별적으로 순번이 추가된다.  메모리 변수에 넣어서 계산 하기에는 너무 텀이 길수도 있으므로 디비를 셀렉해서 가져온다
     @Transactional
     public void insertTL_MVMNEQ_PERIOD(List<ListSiteDTO> periods) {
-        for (ListSiteDTO period : periods) {
+        List<TL_MVMNEQ_PERIODEntity> periodEntities = new ArrayList<>();
+        periods.forEach(period -> {
+
             try {
                 //순번을 정하기 위해 List Sites. survey_periods 의 start_time 기준으로 정렬
                 List<SurveyPeriodDTO> sortedPeriods = period.getSurvey_periods().stream()
                         .sorted(Comparator.comparing(SurveyPeriodDTO::getStart_time))
                         .toList();
 
-                Timestamp currentTime = new Timestamp(System.currentTimeMillis());
                 String instllcId = period.getSite_id().toString();
                 //이 지역의 및 날짜/시간에 대한 현재 최대 순번 을 가져옵니다.
-                Integer currentMaxSequence = tlMvmneqPeriodRepository.findMaxSequenceNoByInstllcId(currentTime, instllcId);
+                Integer currentMaxSequence = tlMvmneqPeriodRepository.findMaxSequenceNoByInstllcId(new Timestamp(System.currentTimeMillis()), instllcId);
 
                 for (int i = 0; i < sortedPeriods.size(); i++) {
                     SurveyPeriodDTO periodDTO = sortedPeriods.get(i);
                     TL_MVMNEQ_PERIODEntity periodEntity = new TL_MVMNEQ_PERIODEntity();
                     TL_MVMNEQ_PERIOD_IdEntity periodIdEntity = new TL_MVMNEQ_PERIOD_IdEntity();
 
-                    periodIdEntity.setCollectionDatetime(currentTime);
+                    periodIdEntity.setCollectionDatetime(new Timestamp(System.currentTimeMillis()));
                     periodIdEntity.setSequenceNo(currentMaxSequence + i + 1);  // 발견된 순번의 최대값을 기준으로 +1
                     periodIdEntity.setInstllcId(instllcId);
 
@@ -245,17 +245,19 @@ public class SaveAfterDtoToEntity {
                     periodEntity.setStartTime(Timestamp.valueOf(periodDTO.getStart_time()));
                     periodEntity.setEndTime(Timestamp.valueOf(periodDTO.getEnd_time()));
 
-                    ////*
-                    // todo for 문 밖에서 saveAll 사용하여 한번에 배치 처리
-                    ////*
-                    tlMvmneqPeriodRepository.save(periodEntity);
+                    periodEntities.add(periodEntity);
                     logger.info("Successfully inserted TL_MVMNEQ_PERIOD for Installation ID {}: {}", instllcId, periodEntity);
                 }
-            } catch (DataAccessException e) {
-                logger.error("Database access error during insert of TL_MVMNEQ_PERIOD", e);
             } catch (Exception e) {
-                logger.error("Unexpected error during insert of TL_MVMNEQ_PERIOD", e);
+                logger.error("Error during processing TL_MVMNEQ_PERIOD", e);
             }
+        });
+
+        try {
+            batchService.batchInsertWithRetry(periodEntities);
+            logger.info("Batch insert for TL_MVMNEQ_PERIOD completed.");
+        } catch (Exception e) {
+            logger.error("Batch insert failed for TL_MVMNEQ_PERIOD", e);
         }
     }
 }

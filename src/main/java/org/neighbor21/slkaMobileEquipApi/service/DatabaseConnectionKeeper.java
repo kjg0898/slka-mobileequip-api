@@ -1,3 +1,4 @@
+/*
 package org.neighbor21.slkaMobileEquipApi.service;
 
 import org.slf4j.Logger;
@@ -7,17 +8,18 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-/**
+
  * packageName    : org.neighbor21.slkaMobileEquipApi.service
  * fileName       : DatabaseConnectionKeeper.java
  * author         : kjg08
  * date           : 24. 4. 19.
- * description    : db 연결 테스트 (select 1)
+ * description    : db 연결 테스트 (select 1) <- 이거 대신 spring.datasource.hikari.keepalive-time 를 사용하여 연결 유지하는쪽으로 변경하여 주석처리함
  * ===========================================================
  * DATE              AUTHOR             NOTE
  * -----------------------------------------------------------
  * 24. 4. 19.        kjg08           최초 생성
- */
+ *//*
+
 @EnableScheduling
 @Component
 public class DatabaseConnectionKeeper {
@@ -41,3 +43,4 @@ public class DatabaseConnectionKeeper {
     }
 }
 
+*/

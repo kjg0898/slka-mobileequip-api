@@ -55,15 +55,9 @@ public class ScheduledTasksHendler {
 
             if (!listSites.isEmpty()) {
 
-                ////*
-                //foreach 랑 관계없음 SiteLogServiceTL_MVMNEQ 에서 한번에 배치 처리
-                ////*
                 //TL_MVMNEQ_CUR 테이블에 이동형 장비 설치위치 관리, TL_MVMNEQ_LOG 테이블에 이동형 장비 설치위치 이력 업데이트
                 saveAfterDtoToEntity.SiteLogServiceTL_MVMNEQ(listSites);
 
-                ////*
-                //foreach 랑 관계없음 insertTL_MVMNEQ_PERIOD 에서 한번에 배치 처리
-                ////*
                 //TL_MVMNEQ_PERIOD 테이블에 이동형장비 조사기간 정보 데이터 insert
                 saveAfterDtoToEntity.insertTL_MVMNEQ_PERIOD(listSites);
             }
@@ -88,10 +82,8 @@ public class ScheduledTasksHendler {
 
                 if (!vehicles.isEmpty()) {
 
-                    ////*
-                    //foreach 랑 관계없음 insertTL_MVMNEQ_PASS 에서 한번에 배치 처리
-                    ////*
-                    saveAfterDtoToEntity.insertTL_MVMNEQ_PASS(vehicles);//TL_MVMNEQ_PASS 테이블에 이동형장비 통과차량 정보 데이터 insert
+                    //TL_MVMNEQ_PASS 테이블에 이동형장비 통과차량 정보 데이터 insert
+                    saveAfterDtoToEntity.insertTL_MVMNEQ_PASS(vehicles);
 
                     //현재 차량 지나간 시간을 최신화
                     lastVehiclePassTimeManager.saveLastVehiclePassTimes();

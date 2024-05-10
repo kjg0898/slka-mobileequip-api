@@ -47,12 +47,11 @@ public class VehicleUtils {
      * 그리고 이미 지나간 차량과 현재 통과하는 차량의 시간차이(초) 값을 구하기 위해
      * 서버가 재 시작한 경우에도 이어지기 위해서 마지막 시간을 파일에 저장하고, 필요할때 불러오는 util
      *
-     * @return 마지막 차량이 지나간 시간(초)
      */
     public static class LastVehiclePassTimeManager {
         private static final Logger logger = LoggerFactory.getLogger(LastVehiclePassTimeManager.class);
         private static final String LAST_PROCESSED_FILENAME = "last_vehicle_pass_time.txt";
-        private static Map<Integer, Timestamp> lastVehiclePassTimeMap = new HashMap<>();
+        private static final Map<Integer, Timestamp> lastVehiclePassTimeMap = new HashMap<>();
 
         public static Timestamp getLastVehiclePassTime(Integer siteId) {
             return Optional.ofNullable(lastVehiclePassTimeMap.get(siteId))
@@ -91,11 +90,6 @@ public class VehicleUtils {
             } catch (IOException e) {
                 logger.error("Failed to save last processed times", e);
             }
-        }
-
-        public void setLastVehiclePassTime(Integer siteId, Timestamp timestamp) {
-            logger.debug("Setting last pass time for siteId {}: {}", siteId, timestamp);
-            lastVehiclePassTimeMap.put(siteId, timestamp);
         }
     }
 }

@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 import kong.unirest.UnirestException;
-import lombok.Getter;
 import org.neighbor21.slkaMobileEquipApi.dto.individualVehicles.IndividualVehiclesDTO;
 import org.neighbor21.slkaMobileEquipApi.dto.listSite.ListSiteDTO;
 import org.neighbor21.slkaMobileEquipApi.service.log.LogService;
@@ -18,7 +17,10 @@ import org.springframework.stereotype.Service;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * packageName    : org.neighbor21.slkaMobileEquipApi.service
@@ -34,9 +36,8 @@ import java.util.*;
 @Service
 public class MCATLYSTApiService {
     private static final Logger logger = LoggerFactory.getLogger(MCATLYSTApiService.class);
-    private LogService logService = new LogService();
-    private Set<Integer> siteCache = new HashSet<>();  // 캐시 구조
-    private Integer limit = 10000;
+    private final LogService logService = new LogService();
+    private final Set<Integer> siteCache = new HashSet<>();  // 캐시 구조
 
     public MCATLYSTApiService() {
         //서비스 인스턴스화 시 Unirest 구성 재설정
@@ -46,7 +47,7 @@ public class MCATLYSTApiService {
 
     private void resetUnirestConfig() {
         Unirest.config().reset(); // Unirest 설정을 초기화
-        Unirest.config().socketTimeout(5000).connectTimeout(5000); // 타임아웃 설정: 연결, 읽기 타임아웃을 5초로 설정
+        Unirest.config().socketTimeout(10000).connectTimeout(10000); // 타임아웃 설정: 연결, 읽기 타임아웃을 5초로 설정
     }
 
 
@@ -64,7 +65,7 @@ public class MCATLYSTApiService {
             logService.listSiteResponseHeaders(response);
             // 응답 데이터 body 반환
             if (response.getStatus() == 200) {
-                List<ListSiteDTO> sitesBody = new ObjectMapper().readValue(response.getBody(), new TypeReference<List<ListSiteDTO>>() {
+                List<ListSiteDTO> sitesBody = new ObjectMapper().readValue(response.getBody(), new TypeReference<>() {
                 });
                 sitesBody.forEach(site -> {
                     cacheSite(site.getSite_id());
@@ -96,6 +97,7 @@ public class MCATLYSTApiService {
         Timestamp lastProcessedTime = VehicleUtils.LastVehiclePassTimeManager.getLastVehiclePassTime(siteId);
         String startTime = formatStartTime(lastProcessedTime);
         //요청 파라미터 생성
+        int limit = 10000;
         String VehiclesBody = buildRequestBody(siteId, startTime, limit);
 
         try {
@@ -109,7 +111,7 @@ public class MCATLYSTApiService {
             logService.individualVehiclesResponseHeaders(response);
             // 응답 데이터 body 반환
             if (response.getStatus() == 200) {
-                List<IndividualVehiclesDTO> vehicles = new ObjectMapper().readValue(response.getBody(), new TypeReference<List<IndividualVehiclesDTO>>() {
+                List<IndividualVehiclesDTO> vehicles = new ObjectMapper().readValue(response.getBody(), new TypeReference<>() {
                 });
                 vehicles.forEach(vehicle -> vehicle.setSiteId(siteId));
                 logger.info("Individual vehicles Data: {}", vehicles);
