@@ -1,5 +1,6 @@
 package org.neighbor21.slkaMobileEquipApi.dto.listSite;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -24,18 +25,25 @@ import java.util.List;
 @AllArgsConstructor
 public class ListSiteDTO {
     // 추가 요청에 필요한 고유 장소 ID
+    @JsonProperty("site_id")
     private Integer site_id;
     //장소 이름
+    @JsonProperty("name")
     private String name;
     //장소 설명
+    @JsonProperty("description")
     private String description;
-    //자산관리 ID
-    private String asset_management_id;
-
+    //
+    @JsonProperty("latitude")
     private Float latitude;
-
+    //
+    @JsonProperty("longitude")
     private Float longitude;
+    //자산관리 ID
+    @JsonProperty("asset_management_id")
+    private String asset_management_id;
     // 현장에서 적용된 차량 분류 체계
+    @JsonProperty("class_scheme_name")
     private String class_scheme_name;
     // class_scheme 의 차량 클래스 목록
     private List<ClassificationDTO> classifications;
