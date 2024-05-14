@@ -12,6 +12,7 @@ import org.neighbor21.slkaMobileEquipApi.service.log.LogService;
 import org.neighbor21.slkaMobileEquipApi.service.util.VehicleUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
@@ -39,24 +40,21 @@ public class MCATLYSTApiService {
     private final LogService logService = new LogService();
     private final Set<Integer> siteCache = new HashSet<>();  // 캐시 구조
 
-    public MCATLYSTApiService() {
-        //서비스 인스턴스화 시 Unirest 구성 재설정
-        resetUnirestConfig();
-    }
+    // api 호출 url 을 설정파일에 넣을거면 사용
+    @Value("${api.url.list_sites}")
+    private String listsitesApiUrl;
 
+    @Value("${api.url.individual_vehicles}")
+    private String individualvehiclesApiUrl;
 
-    private void resetUnirestConfig() {
-        Unirest.config().reset(); // Unirest 설정을 초기화
-        Unirest.config().socketTimeout(10000).connectTimeout(10000); // 타임아웃 설정: 연결, 읽기 타임아웃을 5초로 설정
-    }
-
+    @Value("${api.key}")
+    private String apiKey;
 
     // List Sites 장소목록(모든 장소를 반환)
     public List<ListSiteDTO> listSites() throws UnirestException {
-        resetUnirestConfig();
         try {
-            HttpResponse<String> response = Unirest.post("https://djg.atlyst.metrocount.com/api/list_sites/")
-                    .header("APIKEY", "Your API KEY")
+            HttpResponse<String> response = Unirest.post(listsitesApiUrl)
+                    .header("APIKEY", apiKey)
                     .body("")
                     .asString();
             logger.debug(String.valueOf(response.getBody()));
@@ -92,7 +90,6 @@ public class MCATLYSTApiService {
     //start_timestamp:  String   ISO-8601 표준의 타임스탬프 형식(예: "2019-07-01T00:00")의 YYYY-MM-DDTHH:MM입니다. 쿼리는 시작_타임스탬프보다 크고 같지 않은 차량을 반환합니다.
     //limit:            INTEGER  쿼리에서 반환되는 최대 차량 수입니다. 기본값은 10,000이며 1에서 100,000 사이여야 합니다.
     public List<IndividualVehiclesDTO> individualVehicles(Integer siteId) throws UnirestException {
-        resetUnirestConfig();
         //이전 차량 지나간 시간
         Timestamp lastProcessedTime = VehicleUtils.LastVehiclePassTimeManager.getLastVehiclePassTime(siteId);
         String startTime = formatStartTime(lastProcessedTime);
@@ -101,8 +98,8 @@ public class MCATLYSTApiService {
         String VehiclesBody = buildRequestBody(siteId, startTime, limit);
 
         try {
-            HttpResponse<String> response = Unirest.post("https://djg.atlyst.metrocount.com/api/individual_vehicles/")
-                    .header("APIKEY", "Your API KEY")
+            HttpResponse<String> response = Unirest.post(individualvehiclesApiUrl)
+                    .header("APIKEY", apiKey)
                     .body(VehiclesBody) //요청 파라미터 추가
                     .asString();
             logger.debug(String.valueOf(response.getBody()));

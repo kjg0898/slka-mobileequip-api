@@ -26,24 +26,24 @@ public class LogService {
         HeaderInfo info = new HeaderInfo();
         try {
             // 응답 데이터 형식
-            info.contentType = Optional.ofNullable(response.getHeaders().getFirst("Content-Type")).orElse("Unknown Content-Type");
+            info.contentType = getHeader(response, "Content-Type", "Unknown Content-Type");
             // 응답 본문의 길이
-            info.contentLength = Optional.ofNullable(response.getHeaders().getFirst("Content-Length")).orElse("Unknown Content-Length");
+            info.contentLength = getHeader(response, "Content-Length", "Unknown Content-Length");
             // 연결 상태
-            info.connection = Optional.ofNullable(response.getHeaders().getFirst("Connection")).orElse("Unknown Connection");
+            info.connection = getHeader(response, "Connection", "Unknown Connection");
             // 응답이 생성된 정확한 시간
-            info.date = Optional.ofNullable(response.getHeaders().getFirst("Date")).orElse("Unknown Date");
+            info.date = getHeader(response, "Date", "Unknown Date");
 
             //Amazon Web Services에서 생성한 특정 요청 ID로, 요청을 추적하고 문제를 진단하는 데 사용될 수 있습니다.
-            info.xAmznTraceId = Optional.ofNullable(response.getHeaders().getFirst("X-Amzn-Trace-Id")).orElse("No AWS Request ID");
+            info.xAmznTraceId = getHeader(response, "X-Amzn-Trace-Id", "No AWS Request ID");
             //ex) Miss from cloudfront: CloudFront 캐시에서 응답이 캐시 미스임을 나타내고, 오리진 서버에서 직접 응답이 제공되었음을 알려줍니다.
-            info.xCache = Optional.ofNullable(response.getHeaders().getFirst("X-Cache")).orElse("Unknown Cache Status");
+            info.xCache = getHeader(response, "X-Cache", "Unknown Cache Status");
             //ex) 1.1 52e479c500405e4e5b36d8a25429d06c.cloudfront.net (CloudFront): 응답이 Amazon CloudFront를 통해 전송되었음을 나타냅니다.
-            info.via = Optional.ofNullable(response.getHeaders().getFirst("Via")).orElse("Unknown Via");
+            info.via = getHeader(response, "Via", "Unknown Via");
             //CloudFront의 Point of Presence(POP) 위치를 나타냅니다.
-            info.xAmzCfPop = Optional.ofNullable(response.getHeaders().getFirst("X-Amz-Cf-Pop")).orElse("Unknown CloudFront POP");
+            info.xAmzCfPop = getHeader(response, "X-Amz-Cf-Pop", "Unknown CloudFront POP");
             //CloudFront 요청 ID로, 요청을 CloudFront 내에서 추적하는 데 사용됩니다.
-            info.xAmzCfId = Optional.ofNullable(response.getHeaders().getFirst("X-Amz-Cf-Id")).orElse("Unknown CloudFront ID");
+            info.xAmzCfId = getHeader(response, "X-Amz-Cf-Id", "Unknown CloudFront ID");
 
             //info 로그 출력
             logger.info("data type : {}, body length : {}, connection type : {}, The time the response was generated : {}",
@@ -55,7 +55,9 @@ public class LogService {
         return info;
     }
 
-
+    private String getHeader(HttpResponse<String> response, String headerName, String defaultValue) {
+        return Optional.ofNullable(response.getHeaders().getFirst(headerName)).orElse(defaultValue);
+    }
     // List Sites 용 헤더 로그 메소드
     public void listSiteResponseHeaders(HttpResponse<String> response) {
 

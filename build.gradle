@@ -55,6 +55,11 @@ dependencies {
     // postgresql
     runtimeOnly 'org.postgresql:postgresql'
 
+
+    //Resilience4j (지수 백오프)
+    implementation 'io.github.resilience4j:resilience4j-core:1.7.0'
+    implementation 'io.github.resilience4j:resilience4j-retry:1.7.0'
+
 }
 
 tasks.named('bootBuildImage') {

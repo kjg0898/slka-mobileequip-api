@@ -13,7 +13,7 @@ import java.sql.Timestamp;
  * fileName       : VehicleDataDTO.java
  * author         : kjg08
  * date           : 24. 4. 19.
- * description    :Individual Vehicles 개별 차량(특정 장소에 대한 개별 차량기록) 의 데이터를 가져오는 dto
+ * description    :Individual Vehicles 개별 차량 (특정 장소에 대한 개별 차량기록) api 호출  데이터를 받는 dto
  * ===========================================================
  * DATE              AUTHOR             NOTE
  * -----------------------------------------------------------

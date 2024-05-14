@@ -44,7 +44,7 @@ public class ScheduledTasksHendler {
     }
 
     //1시간 마다 List Sites 장소목록 호출 후 TL_MVMNEQ_CUR 테이블에 이동형 장비 설치위치 관리 업데이트
-    @Scheduled(cron = "*/5 * * * * *") // 5초마다 실행 // @Scheduled(cron = "0 0 * * * *") // 매 시간 정각에 실행
+    @Scheduled(cron = "${scheduler.cron.listSites}") //TL_RIS_ROADWIDTH api 호출
     public void fetchAndCacheListSite() {
         try {
 
@@ -67,7 +67,7 @@ public class ScheduledTasksHendler {
     }
 
     // 5분 간격으로 Individual Vehicles 개별 차량 호출 후
-    @Scheduled(cron = "*/5 * * * * *") // 5초마다 실행  // @Scheduled(cron = "0 */5 * * * *")// 매 5분마다 실행
+    @Scheduled(cron = "${scheduler.cron.IndividualVehicles}") //TL_RIS_ROADWIDTH api 호출
     public void fetchIndividualVehicles() {
         if (mcAtlystApiService.isCacheEmpty()) {
             logger.info("Site cache is empty, skipping fetchIndividualVehicles");

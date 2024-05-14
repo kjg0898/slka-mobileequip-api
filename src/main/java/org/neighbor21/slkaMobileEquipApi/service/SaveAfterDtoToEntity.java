@@ -88,64 +88,86 @@ public class SaveAfterDtoToEntity {
         locations.forEach(location -> {
             try {
                 //설치 위치 관리 테이블 에서 장비아이디 값 조회 후 가져오기 없으면 새로 엔티티 객체 생성
-                //설치위치 관리 테이블 추가
+
                 TL_MVMNEQ_CUREntity tlMvmneqCurEntity = tlMvmneqCurRepository.findByEqpmntId(location.getAsset_management_id())
                         .orElse(new TL_MVMNEQ_CUREntity());
 
                 boolean isNew = tlMvmneqCurEntity.getEqpmntId() == null;
-                boolean isChanged = !isNew && (
-                        !tlMvmneqCurEntity.getInstllcId().equals(location.getSite_id().toString()) ||
-                                !tlMvmneqCurEntity.getInstllcNm().equals(location.getName()) ||
-                                !tlMvmneqCurEntity.getInstllcDescr().equals(location.getDescription()) ||
-                                tlMvmneqCurEntity.getLatitude().compareTo(BigDecimal.valueOf(location.getLatitude())) != 0 ||
-                                tlMvmneqCurEntity.getLongitude().compareTo(BigDecimal.valueOf(location.getLongitude())) != 0
-                );
+                boolean isChanged = isEntityChanged(location, tlMvmneqCurEntity);
+
                 if (isChanged || isNew) {
-                    //설치위치 아이디
-                    tlMvmneqCurEntity.setInstllcId(location.getSite_id().toString());
-                    //설치위치 명
-                    tlMvmneqCurEntity.setInstllcNm(location.getName());
-                    //설치위치 설명
-                    tlMvmneqCurEntity.setInstllcDescr(location.getDescription());
-                    //장비 아이디
-                    tlMvmneqCurEntity.setEqpmntId(location.getAsset_management_id());
-                    //위도
-                    tlMvmneqCurEntity.setLatitude(BigDecimal.valueOf(location.getLatitude()));
-                    //경도
-                    tlMvmneqCurEntity.setLongitude(BigDecimal.valueOf(location.getLongitude()));
 
-                    curEntities.add(tlMvmneqCurEntity); //엔티티를 TL_MVMNEQ_CUREntity 리스트에 저장
-                    logger.info("Successfully updated TL_MVMNEQ_CUR for Equipment ID {}: {}", location.getAsset_management_id(), tlMvmneqCurEntity);
+                    //설치 위치 관리 테이블 리스트 에 값 추가
+                    updateCurrentEntity(location, tlMvmneqCurEntity);
+                    curEntities.add(tlMvmneqCurEntity);
 
-
-                    //설치위치 이력 테이블 추가
-                    TL_MVMNEQ_LOGEntity tlMvmneqLogEntity = new TL_MVMNEQ_LOGEntity();
-                    TL_MVMNEQ_LOG_IdEntity logIdEntity = new TL_MVMNEQ_LOG_IdEntity();
-
-                    //수집일시(현재시간), 설치 위치 아이디(복합키)
-                    logIdEntity.setCollectionDatetime(new Timestamp(System.currentTimeMillis()));
-                    logIdEntity.setInstllcId(location.getSite_id().toString());
-                    tlMvmneqLogEntity.setId(logIdEntity);
-
-                    //설치 위치 명
-                    tlMvmneqLogEntity.setInstllcNm(location.getName());
-                    //설치 위치 설명
-                    tlMvmneqLogEntity.setInstllcDescr(location.getDescription());
-                    //장비 아이디
-                    tlMvmneqLogEntity.setEqpmntId(location.getAsset_management_id());
-                    //위도
-                    tlMvmneqLogEntity.setLatitude(BigDecimal.valueOf(location.getLatitude()));
-                    //경도
-                    tlMvmneqLogEntity.setLongitude(BigDecimal.valueOf(location.getLongitude()));
-
-                    logEntities.add(tlMvmneqLogEntity); //엔티티를 TL_MVMNEQ_LOGEntity 리스트에 저장
-                    logger.info("Successfully logged in TL_MVMNEQ_LOG for Equipment ID {}: {}", location.getAsset_management_id(), tlMvmneqLogEntity);
+                    //설치 위치 이력 테이블 리스트 에 값 추가
+                    TL_MVMNEQ_LOGEntity tlMvmneqLogEntity = createLogEntity(location);
+                    logEntities.add(tlMvmneqLogEntity);
                 }
             } catch (Exception e) {
                 logger.error("Error during processing TL_MVMNEQ_CUR/LOG", e);
             }
         });
         // 배치 처리하여 한번에 리스트를 삽입한다.
+        insertEntities(curEntities, logEntities);
+    }
+
+    //값이 변경 되었는지 아닌지 판단
+    private boolean isEntityChanged(ListSiteDTO location, TL_MVMNEQ_CUREntity tlMvmneqCurEntity) {
+        return !tlMvmneqCurEntity.getInstllcId().equals(location.getSite_id().toString()) ||
+                !tlMvmneqCurEntity.getInstllcNm().equals(location.getName()) ||
+                !tlMvmneqCurEntity.getInstllcDescr().equals(location.getDescription()) ||
+                tlMvmneqCurEntity.getLatitude().compareTo(BigDecimal.valueOf(location.getLatitude())) != 0 ||
+                tlMvmneqCurEntity.getLongitude().compareTo(BigDecimal.valueOf(location.getLongitude())) != 0;
+    }
+
+    //설치위치 관리 테이블에 값 추가
+    private void updateCurrentEntity(ListSiteDTO location, TL_MVMNEQ_CUREntity tlMvmneqCurEntity) {
+        //설치위치 아이디
+        tlMvmneqCurEntity.setInstllcNm(location.getName());
+        //설치위치 명
+        //설치위치 설명
+        tlMvmneqCurEntity.setInstllcId(location.getSite_id().toString());
+        tlMvmneqCurEntity.setInstllcDescr(location.getDescription());
+        //장비 아이디
+        tlMvmneqCurEntity.setEqpmntId(location.getAsset_management_id());
+        //위도
+        tlMvmneqCurEntity.setLatitude(BigDecimal.valueOf(location.getLatitude()));
+        //경도
+        tlMvmneqCurEntity.setLongitude(BigDecimal.valueOf(location.getLongitude()));
+        logger.info("Successfully updated TL_MVMNEQ_CUR for Equipment ID : {} value : {}", location.getAsset_management_id(), tlMvmneqCurEntity);
+    }
+
+    //설치위치 이력 테이블에 값 추가
+    private TL_MVMNEQ_LOGEntity createLogEntity(ListSiteDTO location) {
+        TL_MVMNEQ_LOGEntity tlMvmneqLogEntity = new TL_MVMNEQ_LOGEntity();
+        TL_MVMNEQ_LOG_IdEntity logIdEntity = new TL_MVMNEQ_LOG_IdEntity();
+
+        //수집일시(현재시간)
+        logIdEntity.setCollectionDatetime(new Timestamp(System.currentTimeMillis()));
+        // 설치 위치 아이디
+        logIdEntity.setInstllcId(location.getSite_id().toString());
+        //복합키(수집일시+설치 위치 아이디)
+        tlMvmneqLogEntity.setId(logIdEntity);
+
+        //설치 위치 명
+        tlMvmneqLogEntity.setInstllcNm(location.getName());
+        //설치 위치 설명
+        tlMvmneqLogEntity.setInstllcDescr(location.getDescription());
+        //장비 아이디
+        tlMvmneqLogEntity.setEqpmntId(location.getAsset_management_id());
+        //위도
+        tlMvmneqLogEntity.setLatitude(BigDecimal.valueOf(location.getLatitude()));
+        //경도
+        tlMvmneqLogEntity.setLongitude(BigDecimal.valueOf(location.getLongitude()));
+
+        logger.info("Successfully Logged in TL_MVMNEQ_LOG for Equipment ID {}: {}", location.getAsset_management_id(), tlMvmneqLogEntity);
+        return tlMvmneqLogEntity;
+    }
+
+    // 배치 처리하여 한번에 리스트를 삽입한다.
+    private void insertEntities(List<TL_MVMNEQ_CUREntity> curEntities, List<TL_MVMNEQ_LOGEntity> logEntities) {
         try {
             batchService.batchInsertWithRetry(curEntities);
             batchService.batchInsertWithRetry(logEntities);
@@ -166,7 +188,6 @@ public class SaveAfterDtoToEntity {
                 Integer siteId = vehicle.getSiteId();
                 // 각 위치별 지난 통행 시간 또는 현재 시간
                 Timestamp lastPassTime = lastPassTimeMap.getOrDefault(vehicle.getSiteId(), new Timestamp(System.currentTimeMillis()));
-
                 //각 위치별 현재 통행 시간
                 Timestamp currentTimestamp = new Timestamp(vehicle.getTimestamp().getTime());
 
