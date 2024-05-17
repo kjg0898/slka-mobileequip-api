@@ -13,7 +13,7 @@ import java.util.List;
  * fileName       : ListSiteDTO.java
  * author         : kjg08
  * date           : 24. 4. 17.
- * description    : List Sites 장소목록 api 를 호출하여 데이터를 가져와서 저장하는 dto
+ * description    : List Sites 장소목록 api 를 호출하여 나온 데이터를 받는 dto
  * ===========================================================
  * DATE              AUTHOR             NOTE
  * -----------------------------------------------------------

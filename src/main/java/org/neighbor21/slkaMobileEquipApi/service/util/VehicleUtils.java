@@ -19,16 +19,17 @@ import java.util.stream.Collectors;
  * fileName       : VehicleUtils.java
  * author         : kjg08
  * date           : 24. 4. 23.
- * description    : 여러가지 유틸
+ * description    : 여러 가지 유틸리티 클래스
  * ===========================================================
  * DATE              AUTHOR             NOTE
  * -----------------------------------------------------------
  * 24. 4. 23.        kjg08           최초 생성
+ * 24. 5. 17.        user            주석 추가 및 description 갱신
  */
 public class VehicleUtils {
 
     /**
-     * 두 차량의 Timestamp를 받아 차량 간 간격(초)를 계산합니다.
+     * 두 차량의 Timestamp를 받아 차량 간 간격(초)을 계산합니다.
      *
      * @param currentTimestamp  현재 차량의 타임스탬프
      * @param previousTimestamp 이전 차량의 타임스탬프
@@ -43,16 +44,22 @@ public class VehicleUtils {
     }
 
     /**
-     * Individual Vehicles 개별 차량(특정 장소에 대한 개별 차량기록) api 를 5분마다 호출 할 시에  이전에 이미 호출한 데이터를 호출하지 않기 위해
-     * 그리고 이미 지나간 차량과 현재 통과하는 차량의 시간차이(초) 값을 구하기 위해
-     * 서버가 재 시작한 경우에도 이어지기 위해서 마지막 시간을 파일에 저장하고, 필요할때 불러오는 util
-     *
+     * Individual Vehicles 개별 차량(특정 장소에 대한 개별 차량 기록) API를 5분마다 호출할 때
+     * 이전에 이미 호출한 데이터를 다시 호출하지 않기 위해,
+     * 그리고 이미 지나간 차량과 현재 통과하는 차량의 시간 차이(초) 값을 구하기 위해,
+     * 서버가 재시작한 경우에도 이어지기 위해서 마지막 시간을 파일에 저장하고, 필요할 때 불러오는 유틸리티 클래스
      */
     public static class LastVehiclePassTimeManager {
         private static final Logger logger = LoggerFactory.getLogger(LastVehiclePassTimeManager.class);
         private static final String LAST_PROCESSED_FILENAME = "last_vehicle_pass_time.txt";
         private static final Map<Integer, Timestamp> lastVehiclePassTimeMap = new HashMap<>();
 
+        /**
+         * siteId에 대한 마지막 차량 통과 시간을 반환합니다.
+         *
+         * @param siteId 장소 ID
+         * @return 마지막 차량 통과 시간
+         */
         public static Timestamp getLastVehiclePassTime(Integer siteId) {
             return Optional.ofNullable(lastVehiclePassTimeMap.get(siteId))
                     .orElseGet(() -> {
@@ -61,12 +68,15 @@ public class VehicleUtils {
                     });
         }
 
+        /**
+         * 마지막 차량 통과 시간을 파일에서 로드합니다.
+         */
         public void loadLastVehiclePassTimes() {
             Path path = Paths.get(LAST_PROCESSED_FILENAME);
             try {
                 if (!Files.exists(path)) {
                     logger.info("No existing file found. A new file will be created.");
-                    saveLastVehiclePassTimes();  // Create the file if it doesn't exist.
+                    saveLastVehiclePassTimes();  // 파일이 존재하지 않으면 파일을 생성합니다.
                 }
 
                 List<String> lines = Files.readAllLines(path);
@@ -81,6 +91,9 @@ public class VehicleUtils {
             }
         }
 
+        /**
+         * 마지막 차량 통과 시간을 파일에 저장합니다.
+         */
         public void saveLastVehiclePassTimes() {
             List<String> lines = lastVehiclePassTimeMap.entrySet().stream()
                     .map(entry -> entry.getKey() + "," + entry.getValue().toString())

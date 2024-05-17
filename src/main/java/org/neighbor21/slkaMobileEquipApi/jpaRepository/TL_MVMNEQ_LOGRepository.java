@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
  * fileName       : TL_MVMNEQ_LOGRepository.java
  * author         : kjg08
  * date           : 24. 4. 24.
- * description    :
+ * description    : TL_MVMNEQ_LOG 테이블에 넣기 위한 리파지토리 인터페이스
  * ===========================================================
  * DATE              AUTHOR             NOTE
  * -----------------------------------------------------------

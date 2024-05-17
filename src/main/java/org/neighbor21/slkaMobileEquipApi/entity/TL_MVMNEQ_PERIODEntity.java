@@ -15,7 +15,7 @@ import java.sql.Timestamp;
  * fileName       : TL_MVMNEQ_PERIOD.java
  * author         : kjg08
  * date           : 24. 4. 29.
- * description    :
+ * description    : 이동형장비 조사기간 정보 TL_MVMNEQ_PERIOD 테이블에 넣기 전 entity
  * ===========================================================
  * DATE              AUTHOR             NOTE
  * -----------------------------------------------------------

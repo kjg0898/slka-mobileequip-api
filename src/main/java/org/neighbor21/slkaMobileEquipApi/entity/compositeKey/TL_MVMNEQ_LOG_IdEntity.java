@@ -14,7 +14,7 @@ import java.sql.Timestamp;
  * fileName       : TL_MVMNEQ_CUR_Id.java
  * author         : kjg08
  * date           : 24. 4. 24.
- * description    :
+ * description    : 이동형장비 설치위치 관리 이력 / @id 어노테이션으로는 하나의 pk 밖에 지정할수 없으므로 대신에 복합 pk 구조를 미리 정의해둚
  * ===========================================================
  * DATE              AUTHOR             NOTE
  * -----------------------------------------------------------
@@ -39,9 +39,9 @@ public class TL_MVMNEQ_LOG_IdEntity implements Serializable {
     }
 
 
-    // Constructor
-    public TL_MVMNEQ_LOG_IdEntity(Timestamp collectionDatetime, String instllcId) {
-        this.collectionDatetime = collectionDatetime;
-        this.instllcId = instllcId;
-    }
+//    // Constructor
+//    public TL_MVMNEQ_LOG_IdEntity(Timestamp collectionDatetime, String instllcId) {
+//        this.collectionDatetime = collectionDatetime;
+//        this.instllcId = instllcId;
+//    }
 }

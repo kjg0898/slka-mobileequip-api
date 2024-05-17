@@ -14,7 +14,7 @@ import java.sql.Timestamp;
  * fileName       : TL_MVMNEQ_PERIOD_Id.java
  * author         : kjg08
  * date           : 24. 4. 29.
- * description    :이동형장비 조사기간 정보 TL_MVMNEQ_PERIOD 의 pk (복합키)
+ * description    :이동형장비 조사기간 정보 TL_MVMNEQ_PERIOD 의 pk @id 어노테이션으로는 하나의 pk 밖에 지정할수 없으므로 대신에 복합 pk 구조를 미리 정의해둚
  * ===========================================================
  * DATE              AUTHOR             NOTE
  * -----------------------------------------------------------
@@ -42,10 +42,10 @@ public class TL_MVMNEQ_PERIOD_IdEntity implements Serializable {
     public TL_MVMNEQ_PERIOD_IdEntity() {
     }
 
-    // Constructor
-    public TL_MVMNEQ_PERIOD_IdEntity(Timestamp collectionDatetime, Integer sequenceNo, String instllcId) {
-        this.collectionDatetime = collectionDatetime;
-        this.sequenceNo = sequenceNo;
-        this.instllcId = instllcId;
-    }
+//    // Constructor
+//    public TL_MVMNEQ_PERIOD_IdEntity(Timestamp collectionDatetime, Integer sequenceNo, String instllcId) {
+//        this.collectionDatetime = collectionDatetime;
+//        this.sequenceNo = sequenceNo;
+//        this.instllcId = instllcId;
+//    }
 }
