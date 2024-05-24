@@ -42,10 +42,10 @@ public class TL_MVMNEQ_PERIOD_IdEntity implements Serializable {
     public TL_MVMNEQ_PERIOD_IdEntity() {
     }
 
-//    // Constructor
-//    public TL_MVMNEQ_PERIOD_IdEntity(Timestamp collectionDatetime, Integer sequenceNo, String instllcId) {
-//        this.collectionDatetime = collectionDatetime;
-//        this.sequenceNo = sequenceNo;
-//        this.instllcId = instllcId;
-//    }
+    // Constructor
+    public TL_MVMNEQ_PERIOD_IdEntity(Timestamp collectionDatetime, Integer sequenceNo, String instllcId) {
+        this.collectionDatetime = collectionDatetime;
+        this.sequenceNo = sequenceNo;
+        this.instllcId = instllcId;
+    }
 }

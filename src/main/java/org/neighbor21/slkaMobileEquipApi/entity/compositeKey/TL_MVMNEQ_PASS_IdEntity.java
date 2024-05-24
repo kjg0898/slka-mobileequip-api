@@ -46,11 +46,11 @@ public class TL_MVMNEQ_PASS_IdEntity implements Serializable {
     public TL_MVMNEQ_PASS_IdEntity() {
     }
 
-//    // Constructor
-//    public TL_MVMNEQ_PASS_IdEntity(Timestamp passTime, String vehicleDirection, int passLane, String instllcId) {
-//        this.passTime = passTime;
-//        this.vehicleDirection = vehicleDirection;
-//        this.passLane = passLane;
-//        this.instllcId = instllcId;
-//    }
+    // Constructor
+    public TL_MVMNEQ_PASS_IdEntity(Timestamp passTime, String vehicleDirection, int passLane, String instllcId) {
+        this.passTime = passTime;
+        this.vehicleDirection = vehicleDirection;
+        this.passLane = passLane;
+        this.instllcId = instllcId;
+    }
 }

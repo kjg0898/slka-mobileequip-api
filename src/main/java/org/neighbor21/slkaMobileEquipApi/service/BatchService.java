@@ -2,9 +2,7 @@ package org.neighbor21.slkaMobileEquipApi.service;
 
 import io.github.resilience4j.retry.Retry;
 import io.github.resilience4j.retry.RetryConfig;
-import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.Id;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import org.neighbor21.slkaMobileEquipApi.config.Constants;
@@ -12,11 +10,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import java.lang.reflect.Field;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 /**
@@ -46,77 +43,69 @@ public class BatchService {
      * @param retryConfig 재시도 구성 설정
      */
     @Autowired
-    public BatchService(RetryConfig retryConfig, TransactionTemplate transactionTemplate) {
+    public BatchService(RetryConfig retryConfig, PlatformTransactionManager transactionManager) {
         this.retryConfig = retryConfig;
-        this.transactionTemplate = transactionTemplate;
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
     }
 
     /**
-     * 엔티티 리스트를 배치로 삽입하는 메서드로, 실패 시 재시도 기능을 포함한다.
-     * 각 엔티티를 지속하고, 주기적으로 EntityManager를 플러시 및 클리어하여 메모리 사용을 최적화한다.
+     * 엔티티 리스트를 배치로 삽입하는 메소드. Resilience4j를 사용하여 재시도 로직을 구현함.
+     * 각 엔티티를 지속하고, 주기적으로 entityManager 플러시 및 클리어하여 메모리 사용을 최적화한다.
      *
      * @param entities 삽입할 엔티티 리스트
      */
     @Transactional
-    public void batchInsertWithRetry(List<?> entities) {
+    public <T> void batchInsertWithRetry(List<T> entities, BatchInsertFunction<T> insertFunction) {
+        long startTime = System.currentTimeMillis();
         int batchSize = Constants.DEFAULT_BATCH_SIZE; // 배치 크기 설정
         Retry retry = Retry.of("batchInsert", retryConfig); // 재시도 설정
-        AtomicInteger index = new AtomicInteger(0); // 처리된 엔티티 수를 추적하는 AtomicInteger
+        int totalRecords = entities.size();
 
-        entities.forEach(entity -> {
-            Supplier<Boolean> insertSupplier = Retry.decorateSupplier(retry, () -> {
-                int currentIndex = index.incrementAndGet(); // 현재 인덱스 증가
-                return transactionTemplate.execute(status -> {
-                    try {
-                        Object primaryKey = getPrimaryKey(entity); // 엔티티의 기본 키를 가져옴
-                        if (primaryKey != null && (entityManager.contains(entity) || entityManager.find(entity.getClass(), primaryKey) != null)) {
-                            entityManager.merge(entity); // 엔티티 병합
-                        } else {
-                            entityManager.persist(entity); // 엔티티 삽입
-                        }
-                        if (currentIndex % batchSize == 0 || currentIndex == entities.size()) {
+
+        transactionTemplate.executeWithoutResult(status -> { // 이 블록 내의 코드는 트랜잭션 내에서 실행됩니다.
+            // entities 리스트를 batchSize 크기만큼씩 나누어 처리하는 루프
+            for (int i = 0; i < totalRecords; i += batchSize) {
+                // 현재 배치의 끝 인덱스를 계산
+                int end = Math.min(i + batchSize, totalRecords);
+                // 현재 배치 리스트를 추출
+                List<T> batchList = entities.subList(i, end);
+
+                if (!batchList.isEmpty()) {
+                    // Retry.decorateSupplier를 사용하여 재시도 로직을 감싼 Supplier 생성 함수형 인터페이스이므로, 람다 표현식이나 메서드 참조를 사용하여 간단하게 구현 지연 계산: Supplier는 계산 결과를 즉시 반환하지 않고, 필요할 때 계산하여 반환 파라미터화된 객체 생성: Supplier를 사용하여 특정 조건이나 상황에 따라 객체를 생성
+                    Supplier<Boolean> insertSupplier = Retry.decorateSupplier(retry, () -> {
+                        try {
+                            for (T entity : batchList) {
+                                insertFunction.insert(entityManager, entity); // 엔티티 삽입 함수 호출
+                            }
                             entityManager.flush(); // 변경 사항을 데이터베이스에 반영
                             entityManager.clear(); // 영속성 컨텍스트를 비움
+
+                            return true;
+                        } catch (Exception e) {
+                            logger.warn("Batch insert attempt failed: {}", e.getMessage(), e);
+                            try {
+                                throw e;
+                            } catch (Exception ex) {
+                                throw new RuntimeException(ex);
+                            }
                         }
-                        return true;
+                    });
+
+                    try {
+                        insertSupplier.get();
                     } catch (Exception e) {
-                        logger.warn("Attempt to insert entity at index {} failed: {}", currentIndex, e.getMessage(), e);
-                        status.setRollbackOnly(); // 트랜잭션 롤백
-                        throw e;
+                        logger.error("Failed to insert batch at index {} to {}", i, end, e);
                     }
-                });
-            });
-            try {
-                insertSupplier.get(); // 재시도 로직 실행
-            } catch (Exception e) {
-                logger.error("Failed to insert entity at index {} after retries", index.get(), e);
-            }
-        });
-
-        transactionTemplate.execute(status -> {
-            entityManager.flush(); // 남은 변경 사항을 데이터베이스에 반영
-            entityManager.clear(); // 영속성 컨텍스트를 비움
-            return null;
-        });
-    }
-
-    /**
-     * 엔티티의 기본 키를 가져오는 메소드.
-     *
-     * @param entity 기본 키를 가져올 엔티티
-     * @return 기본 키 객체
-     */
-    private Object getPrimaryKey(Object entity) {
-        try {
-            for (Field field : entity.getClass().getDeclaredFields()) { // 엔티티의 모든 필드를 반복
-                if (field.isAnnotationPresent(Id.class) || field.isAnnotationPresent(EmbeddedId.class)) { // 기본 키 필드를 찾음
-                    field.setAccessible(true); // 필드 접근 가능 설정
-                    return field.get(entity); // 필드 값 반환
                 }
             }
-        } catch (IllegalAccessException e) {
-            logger.error("Failed to access primary key field: {}", e.getMessage(), e);
-        }
-        return null;
+        });
+
+        long endTime = System.currentTimeMillis();
+        logger.info("Total processing time for batch insert: {} ms", (endTime - startTime));
+    }
+
+    @FunctionalInterface
+    public interface BatchInsertFunction<T> {
+        void insert(EntityManager entityManager, T entity) throws Exception;
     }
 }

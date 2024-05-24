@@ -39,9 +39,9 @@ public class TL_MVMNEQ_LOG_IdEntity implements Serializable {
     }
 
 
-//    // Constructor
-//    public TL_MVMNEQ_LOG_IdEntity(Timestamp collectionDatetime, String instllcId) {
-//        this.collectionDatetime = collectionDatetime;
-//        this.instllcId = instllcId;
-//    }
+    // Constructor
+    public TL_MVMNEQ_LOG_IdEntity(Timestamp collectionDatetime, String instllcId) {
+        this.collectionDatetime = collectionDatetime;
+        this.instllcId = instllcId;
+    }
 }

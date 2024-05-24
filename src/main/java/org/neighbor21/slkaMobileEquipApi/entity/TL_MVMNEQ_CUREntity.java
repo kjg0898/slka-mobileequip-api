@@ -1,11 +1,12 @@
 package org.neighbor21.slkaMobileEquipApi.entity;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
+import org.neighbor21.slkaMobileEquipApi.entity.compositeKey.TL_MVMNEQ_CUR_IdEntity;
 
 import java.math.BigDecimal;
 
@@ -23,13 +24,12 @@ import java.math.BigDecimal;
 @Entity
 @Getter
 @Setter
-@Table(name = "TL_MVMNEQ_CUR")
+@Table(name = "TL_MVMNEQ_CUR", schema = "srlk")
 public class TL_MVMNEQ_CUREntity {
 
 
-    @Id
-    @Column(name = "INSTLLC_ID", length = 32)
-    private String instllcId;  // 설치위치 아이디
+    @EmbeddedId
+    private TL_MVMNEQ_CUR_IdEntity instllcId;  // 사용할 복합 키
 
     @Column(name = "INSTLLC_NM", length = 50)
     private String instllcNm;  // 설치위치 명

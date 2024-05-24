@@ -3,9 +3,7 @@ package org.neighbor21.slkaMobileEquipApi.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import kong.unirest.HttpResponse;
-import kong.unirest.Unirest;
-import kong.unirest.UnirestException;
+import kong.unirest.*;
 import org.neighbor21.slkaMobileEquipApi.dto.individualVehicles.IndividualVehiclesDTO;
 import org.neighbor21.slkaMobileEquipApi.dto.listSite.ListSiteDTO;
 import org.neighbor21.slkaMobileEquipApi.service.log.LogService;
@@ -15,13 +13,16 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * packageName    : org.neighbor21.slkaMobileEquipApi.service
@@ -50,6 +51,7 @@ public class MCATLYSTApiService {
     @Value("${api.key}")
     private String apiKey;
 
+
     /**
      * List Sites 장소목록(모든 장소를 반환)
      *
@@ -57,11 +59,112 @@ public class MCATLYSTApiService {
      * @throws UnirestException API 요청 시 발생하는 예외
      */
     public List<ListSiteDTO> listSites() throws UnirestException {
+//테스트 중
+//******************************************************************************************************************************************************************************************************************************************************************************************************************
+//******************************************************************************************************************************************************************************************************************************************************************************************************************
+//******************************************************************************************************************************************************************************************************************************************************************************************************************
+//******************************************************************************************************************************************************************************************************************************************************************************************************************
+//            HttpResponse<String> response = Unirest.post(listsitesApiUrl)
+//                    .header("APIKEY", apiKey)
+//                    .body("")
+//                    .asString();
+
+// 여러 개의 테스트 데이터를 자동으로 생성
         try {
-            HttpResponse<String> response = Unirest.post(listsitesApiUrl)
-                    .header("APIKEY", apiKey)
-                    .body("")
-                    .asString();
+            // 여러 개의 테스트 데이터를 자동으로 생성
+            String testData = generateTestData(1); // 원하는 개수만큼 생성
+
+            HttpResponse<String> response = new HttpResponse<String>() {
+                @Override
+                public int getStatus() {
+                    return 200; // HTTP 200 OK
+                }
+
+                @Override
+                public String getStatusText() {
+                    return "OK";
+                }
+
+                @Override
+                public String getBody() {
+                    return testData;
+                }
+
+                @Override
+                public Headers getHeaders() {
+                    Headers headers = new Headers();
+                    headers.add("Content-Type", "application/json");
+                    headers.add("Content-Length", String.valueOf(testData.length()));
+                    headers.add("Connection", "keep-alive");
+                    headers.add("Date", "Fri, 30 Jun 2023 01:27:21 GMT");
+                    headers.add("x-amzn-RequestId", "e7a04d99-ef47-4ef1-a2c4-df098f049c8b");
+                    headers.add("Content-Encoding", "gzip");
+                    headers.add("Allow", "OPTIONS, POST");
+                    headers.add("x-amzn-Remapped-Content-Length", "36296");
+                    headers.add("X-Frame-Options", "SAMEORIGIN");
+                    headers.add("x-amz-apigw-id", "HTxYFHLPIAMFQiA=");
+                    headers.add("Vary", "Accept, Origin");
+                    headers.add("X-Amzn-Trace-Id", "Root=1-649e2f66-3960974312a927dc7db721dd;Sampled=1;lineage=ebde1530:0");
+                    headers.add("X-Cache", "Miss from cloudfront");
+                    headers.add("Via", "1.1 52e479c500405e4e5b36d8a25429d06c.cloudfront.net (CloudFront)");
+                    headers.add("X-Amz-Cf-Pop", "IAD55-P5");
+                    headers.add("X-Amz-Cf-Id", "-ug4SvYW3oMWEV071hTQI5DDC8TyZTxNGDXkgWbTrZ_B4JkJD-HMrg==");
+                    return headers;
+                }
+
+                @Override
+                public boolean isSuccess() {
+                    return getStatus() == 200;
+                }
+
+                @Override
+                public <E> E mapError(Class<? extends E> errorClass) {
+                    return null;
+                }
+
+                @Override
+                public Cookies getCookies() {
+                    return null;
+                }
+
+                @Override
+                public Optional<UnirestParsingException> getParsingError() {
+                    return null;
+                }
+
+                @Override
+                public <V> V mapBody(Function<String, V> func) {
+                    return null;
+                }
+
+                @Override
+                public <V> HttpResponse<V> map(Function<String, V> func) {
+                    return null;
+                }
+
+                @Override
+                public HttpResponse<String> ifSuccess(Consumer<HttpResponse<String>> consumer) {
+                    return null;
+                }
+
+                @Override
+                public HttpResponse<String> ifFailure(Consumer<HttpResponse<String>> consumer) {
+                    return null;
+                }
+
+                @Override
+                public <E> HttpResponse<String> ifFailure(Class<? extends E> errorClass, Consumer<HttpResponse<E>> consumer) {
+                    return null;
+                }
+            };
+
+
+//테스트 중
+//******************************************************************************************************************************************************************************************************************************************************************************************************************
+//******************************************************************************************************************************************************************************************************************************************************************************************************************
+//******************************************************************************************************************************************************************************************************************************************************************************************************************
+//******************************************************************************************************************************************************************************************************************************************************************************************************************
+
             logger.debug("List Sites 응답 바디: {}", response.getBody());
             logger.debug("List Sites 응답 헤더: {}", response.getHeaders());
             // 헤더값 로깅
@@ -102,12 +205,112 @@ public class MCATLYSTApiService {
         // 요청 파라미터 생성
         int limit = 10000;
         String VehiclesBody = buildRequestBody(siteId, startTime, limit);
+//테스트 중
+//******************************************************************************************************************************************************************************************************************************************************************************************************************
+//******************************************************************************************************************************************************************************************************************************************************************************************************************
+//******************************************************************************************************************************************************************************************************************************************************************************************************************
+//******************************************************************************************************************************************************************************************************************************************************************************************************************
 
         try {
-            HttpResponse<String> response = Unirest.post(individualvehiclesApiUrl)
-                    .header("APIKEY", apiKey)
-                    .body(VehiclesBody)
-                    .asString();
+//            HttpResponse<String> response = Unirest.post(individualvehiclesApiUrl)
+//                    .header("APIKEY", apiKey)
+//                    .body(VehiclesBody)
+//                    .asString();
+
+            String testData = generateIndividualVehiclesTestData(siteId, 1);
+
+            HttpResponse<String> response = new HttpResponse<String>() {
+                @Override
+                public int getStatus() {
+                    return 200; // HTTP 200 OK
+                }
+
+                @Override
+                public String getStatusText() {
+                    return "OK";
+                }
+
+                @Override
+                public String getBody() {
+                    return testData;
+                }
+
+                @Override
+                public Headers getHeaders() {
+                    Headers headers = new Headers();
+                    headers.add("Content-Type", "application/json");
+                    headers.add("Content-Length", String.valueOf(testData.length()));
+                    headers.add("Connection", "keep-alive");
+                    headers.add("Date", "Fri, 30 Jun 2023 01:48:37 GMT");
+                    headers.add("x-amzn-RequestId", "8bf6d870-0dd2-41f9-967d-4d65b94fc8ec");
+                    headers.add("Content-Encoding", "gzip");
+                    headers.add("Allow", "OPTIONS, POST");
+                    headers.add("x-amzn-Remapped-Content-Length", "694770");
+                    headers.add("X-Frame-Options", "SAMEORIGIN");
+                    headers.add("x-amzn-apigw-id", "HT0hrGWmIAMFbgw=");
+                    headers.add("Vary", "Accept, Origin");
+                    headers.add("X-Amzn-Trace-Id", "Root=1-649e3470-0e13d5076746458a0d24307f;Sampled=1;lineage=ebde1530:0");
+                    headers.add("X-Cache", "Miss from cloudfront");
+                    headers.add("Via", "1.1 cf7e8b3887a490b60a55be14eb004b54.cloudfront.net (CloudFront)");
+                    headers.add("X-Amz-Cf-Pop", "IAD55-P5");
+                    headers.add("X-Amz-Cf-Id", "1x3CgByyXZ1wzq9-ImMd7fTQONJqm-m29OEnLBO8ZeF7oZpwfxYm3Q==");
+                    return headers;
+                }
+
+                @Override
+                public boolean isSuccess() {
+                    return getStatus() == 200;
+                }
+
+                @Override
+                public <E> E mapError(Class<? extends E> errorClass) {
+                    return null;
+                }
+
+                @Override
+                public Cookies getCookies() {
+                    return null;
+                }
+
+                @Override
+                public Optional<UnirestParsingException> getParsingError() {
+                    return null;
+                }
+
+                @Override
+                public <V> V mapBody(Function<String, V> func) {
+                    return null;
+                }
+
+                @Override
+                public <V> HttpResponse<V> map(Function<String, V> func) {
+                    return null;
+                }
+
+                @Override
+                public HttpResponse<String> ifSuccess(Consumer<HttpResponse<String>> consumer) {
+                    return null;
+                }
+
+                @Override
+                public HttpResponse<String> ifFailure(Consumer<HttpResponse<String>> consumer) {
+                    return null;
+                }
+
+                @Override
+                public <E> HttpResponse<String> ifFailure(Class<? extends E> errorClass, Consumer<HttpResponse<E>> consumer) {
+                    return null;
+                }
+            };
+
+
+//테스트 중
+//******************************************************************************************************************************************************************************************************************************************************************************************************************
+//******************************************************************************************************************************************************************************************************************************************************************************************************************
+//******************************************************************************************************************************************************************************************************************************************************************************************************************
+//******************************************************************************************************************************************************************************************************************************************************************************************************************
+
+
             logger.debug("Individual Vehicles 응답 바디: {}", response.getBody());
             logger.debug("Individual Vehicles 응답 헤더: {}", response.getHeaders());
             // 헤더 로그 로깅
@@ -184,5 +387,65 @@ public class MCATLYSTApiService {
      */
     public Set<Integer> getSiteCache() {
         return Collections.unmodifiableSet(siteCache);
+    }
+
+    /**
+     * 여러 개의 테스트 데이터를 생성하는 메소드
+     *
+     * @param count 생성할 데이터 개수
+     * @return JSON 형식의 테스트 데이터 문자열
+     */
+    private String generateTestData(int count) {
+        List<String> testDataList = IntStream.range(0, count).mapToObj(i -> {
+            Integer min = LocalTime.now().getMinute() + i; // Ensure IDs
+
+            Integer siteId = i;
+            String siteName = "SITE NAME " + min;
+            String description = "EXAMPLE ROAD " + min;
+            double latitude = -1.032914;
+            double longitude = 1.032914;
+            return String.format("{\"pk\": %d, \"site_id\": %d, \"name\": \"%s\", \"description\": \"%s\", \"latitude\": %f, \"longitude\": %f, \"asset_management_id\": \"SLRK\", \"class_scheme_name\": \"VRX\", \"survey_periods\": [{\"start_time\": \"2022-02-08T12:22:00\", \"end_time\": \"2022-02-17T12:13:00\"}], \"classifications\": [{\"name\": \"AR0\"}, {\"name\": \"SV\"}]}", i, siteId, siteName, description, latitude, longitude);
+        }).collect(Collectors.toList());
+        logger.info(testDataList.toString());
+        return "[" + String.join(",", testDataList) + "]";
+    }
+
+    /**
+     * 여러 개의 테스트 Individual Vehicles 데이터를 생성하는 메소드
+     *
+     * @param count 생성할 데이터 개수
+     * @return JSON 형식의 테스트 데이터 문자열
+     */
+    /**
+     * 여러 개의 테스트 Individual Vehicles 데이터를 생성하는 메소드
+     *
+     * @param siteId 생성할 데이터의 siteId
+     * @param count  생성할 데이터 개수
+     * @return JSON 형식의 테스트 데이터 문자열
+     */
+    public String generateIndividualVehiclesTestData(int siteId, int count) {
+        List<Map<String, Object>> dataList = IntStream.range(0, count).mapToObj(i -> {
+            Map<String, Object> data = new HashMap<>();
+            data.put("site_id", siteId);
+            data.put("timestamp", LocalDateTime.now().minusMinutes(i).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + "Z");
+            data.put("localtime", LocalDateTime.now().minusMinutes(i).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+            data.put("heading", i % 2 == 0 ? "North" : "South");
+            data.put("velocity(m/s)", BigDecimal.valueOf(Math.random() * 10));
+            data.put("length(m)", BigDecimal.valueOf(Math.random() * 2));
+            data.put("headway(s)", (int) (Math.random() * 100));
+            data.put("class_scheme(Shared Path 02)", i % 3 == 0 ? "Short Cycle" : "Long Cycle");
+            data.put("lane_index", i % 2);
+            return data;
+        }).collect(Collectors.toList());
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            String json = objectMapper.writeValueAsString(dataList);
+            logger.info("Generated test data: {}", json);
+            return json;
+        } catch (JsonProcessingException e) {
+            logger.error("테스트 데이터 생성 중 오류 발생", e);
+            throw new RuntimeException("JSON 생성 오류", e);
+        }
     }
 }

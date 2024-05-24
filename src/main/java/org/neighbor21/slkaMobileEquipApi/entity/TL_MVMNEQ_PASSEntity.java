@@ -24,7 +24,7 @@ import java.math.BigDecimal;
 @Entity
 @Getter
 @Setter
-@Table(name = "TL_MVMNEQ_PASS")
+@Table(name = "TL_MVMNEQ_PASS", schema = "srlk")
 public class TL_MVMNEQ_PASSEntity {
 
     @EmbeddedId

@@ -24,6 +24,11 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ListSiteDTO {
+
+    //pk
+    @JsonProperty("pk")
+    private int pk;
+
     // 추가 요청에 필요한 고유 장소 ID
     @JsonProperty("site_id")
     private Integer site_id;

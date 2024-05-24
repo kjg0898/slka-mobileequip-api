@@ -24,7 +24,7 @@ import java.sql.Timestamp;
 @Entity
 @Getter
 @Setter
-@Table(name = "TL_MVMNEQ_PERIOD")
+@Table(name = "TL_MVMNEQ_PERIOD", schema = "srlk")
 public class TL_MVMNEQ_PERIODEntity {
 
     @EmbeddedId
