@@ -72,7 +72,7 @@ public class MCATLYSTApiService {
 // 여러 개의 테스트 데이터를 자동으로 생성
         try {
             // 여러 개의 테스트 데이터를 자동으로 생성
-            String testData = generateTestData(1); // 원하는 개수만큼 생성
+            String testData = generateTestData(100000); // 원하는 개수만큼 생성
 
             HttpResponse<String> response = new HttpResponse<String>() {
                 @Override
@@ -175,7 +175,7 @@ public class MCATLYSTApiService {
                 });
                 sitesBody.forEach(site -> {
                     cacheSite(site.getSite_id());
-                    logger.info("응답 List Sites 데이터: {}", site);
+                    //logger.info("응답 List Sites 데이터: {}", site);
                 });
                 return sitesBody;
             } else {
@@ -205,12 +205,12 @@ public class MCATLYSTApiService {
         // 요청 파라미터 생성
         int limit = 10000;
         String VehiclesBody = buildRequestBody(siteId, startTime, limit);
+
 //테스트 중
 //******************************************************************************************************************************************************************************************************************************************************************************************************************
 //******************************************************************************************************************************************************************************************************************************************************************************************************************
 //******************************************************************************************************************************************************************************************************************************************************************************************************************
 //******************************************************************************************************************************************************************************************************************************************************************************************************************
-
         try {
 //            HttpResponse<String> response = Unirest.post(individualvehiclesApiUrl)
 //                    .header("APIKEY", apiKey)
@@ -368,7 +368,6 @@ public class MCATLYSTApiService {
      */
     public void cacheSite(Integer siteId) {
         siteCache.add(siteId);
-        logger.info("사이트 ID 캐싱: {}", siteId);
     }
 
     /**
@@ -406,7 +405,7 @@ public class MCATLYSTApiService {
             double longitude = 1.032914;
             return String.format("{\"pk\": %d, \"site_id\": %d, \"name\": \"%s\", \"description\": \"%s\", \"latitude\": %f, \"longitude\": %f, \"asset_management_id\": \"SLRK\", \"class_scheme_name\": \"VRX\", \"survey_periods\": [{\"start_time\": \"2022-02-08T12:22:00\", \"end_time\": \"2022-02-17T12:13:00\"}], \"classifications\": [{\"name\": \"AR0\"}, {\"name\": \"SV\"}]}", i, siteId, siteName, description, latitude, longitude);
         }).collect(Collectors.toList());
-        logger.info(testDataList.toString());
+        //logger.info(testDataList.toString());
         return "[" + String.join(",", testDataList) + "]";
     }
 
@@ -441,7 +440,7 @@ public class MCATLYSTApiService {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             String json = objectMapper.writeValueAsString(dataList);
-            logger.info("Generated test data: {}", json);
+            //logger.info("Generated test data: {}", json);
             return json;
         } catch (JsonProcessingException e) {
             logger.error("테스트 데이터 생성 중 오류 발생", e);

@@ -56,7 +56,7 @@ public class BatchService {
      */
     @Transactional
     public <T> void batchInsertWithRetry(List<T> entities, BatchInsertFunction<T> insertFunction) {
-        long startTime = System.currentTimeMillis();
+
         int batchSize = Constants.DEFAULT_BATCH_SIZE; // 배치 크기 설정
         Retry retry = Retry.of("batchInsert", retryConfig); // 재시도 설정
         int totalRecords = entities.size();
@@ -100,8 +100,7 @@ public class BatchService {
             }
         });
 
-        long endTime = System.currentTimeMillis();
-        logger.info("Total processing time for batch insert: {} ms", (endTime - startTime));
+
     }
 
     @FunctionalInterface

@@ -67,13 +67,28 @@ public class SiteService {
         }
 
         // 엔티티 리스트를 배치로 삽입
-        if (!curEntities.isEmpty()) {
+        long dbStartTime = System.currentTimeMillis();
+        try {
+            long startTime = System.currentTimeMillis();
             batchService.batchInsertWithRetry(curEntities, this::insertCurrentEntity);
+            long endTime = System.currentTimeMillis();
+            logger.info("batchInsertWithRetry 메서드에서 TL_MVMNEQ_CUR_IdEntity 배치 삽입에 걸린 시간: {} ms", (endTime - startTime));
+            //logger.info("TL_MVMNEQ_CUR 배치 삽입 완료.");
+        } catch (Exception e) {
+            logger.error("TL_MVMNEQ_CUR 배치 삽입 실패", e);
         }
-        if (!logEntities.isEmpty()) {
+        try {
+            long startTime = System.currentTimeMillis();
             batchService.batchInsertWithRetry(logEntities, this::insertLogEntity);
+            long endTime = System.currentTimeMillis();
+            logger.info("batchInsertWithRetry 메서드에서 TL_MVMNEQ_LOGRepository 배치 삽입에 걸린 시간: {} ms", (endTime - startTime));
+            //logger.info("TL_MVMNEQ_LOG 배치 삽입 완료.");
+        } catch (Exception e) {
+            logger.error("TL_MVMNEQ_LOG 배치 삽입 실패", e);
         }
-        logger.info("TL_MVMNEQ_LOG 및 TL_MVMNEQ_CUR 배치 삽입 완료.");
+        long dbEndTime = System.currentTimeMillis();
+        logger.info("saveSiteLogs 메서드에서 전체 데이터베이스 삽입 작업에 걸린 시간: {} ms", (dbEndTime - dbStartTime));
+        //logger.info("TL_MVMNEQ_LOG 및 TL_MVMNEQ_CUR 배치 삽입 완료.");
     }
 
     /**
@@ -92,7 +107,7 @@ public class SiteService {
         tlMvmneqCurEntity.setLatitude(BigDecimal.valueOf(location.getLatitude()));
         tlMvmneqCurEntity.setLongitude(BigDecimal.valueOf(location.getLongitude()));
         tlMvmneqCurEntity.setEqpmntId(location.getAsset_management_id());
-        logger.info("설치 위치 관리 엔티티 생성 (장비 ID: {}): {}", location.getAsset_management_id(), tlMvmneqCurEntity);
+        //logger.info("설치 위치 관리 엔티티 생성 (장비 ID: {}): {}", location.getAsset_management_id(), tlMvmneqCurEntity);
 
         return tlMvmneqCurEntity;
     }
@@ -117,7 +132,7 @@ public class SiteService {
         tlMvmneqLogEntity.setLatitude(BigDecimal.valueOf(location.getLatitude()));
         tlMvmneqLogEntity.setLongitude(BigDecimal.valueOf(location.getLongitude()));
 
-        logger.info("설치 위치 이력 엔티티 생성 (장비 ID: {}): {}", location.getAsset_management_id(), tlMvmneqLogEntity);
+        //logger.info("설치 위치 이력 엔티티 생성 (장비 ID: {}): {}", location.getAsset_management_id(), tlMvmneqLogEntity);
         return tlMvmneqLogEntity;
     }
 
