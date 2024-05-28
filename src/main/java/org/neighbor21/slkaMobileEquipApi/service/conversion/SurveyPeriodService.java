@@ -69,7 +69,7 @@ public class SurveyPeriodService {
 
                 String instllcId = period.getSite_id().toString();
                 // 현재 설치 위치 ID에 대한 최대 순번을 가져옴
-                Integer currentMaxSequence = tlMvmneqPeriodRepository.findMaxSequenceNoByInstllcId(Timestamp.valueOf(LocalDateTime.now().format(formatter)), instllcId);
+                Integer currentMaxSequence = tlMvmneqPeriodRepository.findMaxSequenceNoByInstllcId(instllcId);
 
                 // 각 조사 기간을 엔티티로 변환하여 리스트에 추가
                 for (int i = 0; i < sortedPeriods.size(); i++) {
@@ -86,7 +86,6 @@ public class SurveyPeriodService {
                     periodEntity.setEndTime(Timestamp.valueOf(periodDTO.getEnd_time().replace("T", " ")));
 
                     periodEntities.add(periodEntity);
-                    //logger.info("TL_MVMNEQ_PERIOD 엔티티에 삽입 성공 (설치 위치 ID: {}): {}", instllcId, periodEntity);
                 }
             } catch (Exception e) {
                 logger.error("TL_MVMNEQ_PERIOD 처리 중 오류 발생", e);
@@ -96,16 +95,12 @@ public class SurveyPeriodService {
         // 엔티티 리스트를 배치로 삽입
         long dbStartTime = System.currentTimeMillis();
         try {
-            long startTime = System.currentTimeMillis();
             batchService.batchInsertWithRetry(periodEntities, this::insertPeriodEntity);
-            long endTime = System.currentTimeMillis();
-            logger.info("batchInsertWithRetry 메서드에서 TL_MVMNEQ_PERIODEntity 배치 삽입에 걸린 시간: {} ms", (endTime - startTime));
-            //logger.info("TL_MVMNEQ_PERIOD 배치 삽입 완료.");
         } catch (Exception e) {
             logger.error("TL_MVMNEQ_PERIOD 배치 삽입 실패", e);
         }
         long dbEndTime = System.currentTimeMillis();
-        logger.info("saveSurveyPeriods 메서드에서 전체 데이터베이스 삽입 작업에 걸린 시간: {} ms", (dbEndTime - dbStartTime));
+        logger.info("TL_MVMNEQ_PERIOD 배치 삽입 작업에 걸린 시간: {} ms", (dbEndTime - dbStartTime));
     }
 
     /**

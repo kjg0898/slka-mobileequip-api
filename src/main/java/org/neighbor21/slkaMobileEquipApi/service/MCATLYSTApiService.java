@@ -6,10 +6,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import kong.unirest.*;
 import org.neighbor21.slkaMobileEquipApi.dto.individualVehicles.IndividualVehiclesDTO;
 import org.neighbor21.slkaMobileEquipApi.dto.listSite.ListSiteDTO;
+import org.neighbor21.slkaMobileEquipApi.service.conversion.VehiclePassService;
 import org.neighbor21.slkaMobileEquipApi.service.log.LogService;
 import org.neighbor21.slkaMobileEquipApi.service.util.VehicleUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -50,7 +52,6 @@ public class MCATLYSTApiService {
 
     @Value("${api.key}")
     private String apiKey;
-
 
     /**
      * List Sites 장소목록(모든 장소를 반환)
@@ -217,7 +218,7 @@ public class MCATLYSTApiService {
 //                    .body(VehiclesBody)
 //                    .asString();
 
-            String testData = generateIndividualVehiclesTestData(siteId, 1);
+            String testData = generateIndividualVehiclesTestData(siteId, 0);
 
             HttpResponse<String> response = new HttpResponse<String>() {
                 @Override
@@ -320,7 +321,8 @@ public class MCATLYSTApiService {
                 List<IndividualVehiclesDTO> vehicles = new ObjectMapper().readValue(response.getBody(), new TypeReference<>() {
                 });
                 vehicles.forEach(vehicle -> vehicle.setSiteId(siteId));
-                logger.info("Individual vehicles 데이터: {}", vehicles);
+                //logger.info("Individual vehicles 데이터: {}", vehicles);
+
                 return vehicles;
             } else {
                 logger.warn("개별 차량 데이터를 가져오는데 실패했습니다: HTTP {}", response.getStatus());
@@ -394,7 +396,11 @@ public class MCATLYSTApiService {
      * @param count 생성할 데이터 개수
      * @return JSON 형식의 테스트 데이터 문자열
      */
+    private static final Random random = new Random();
+
     private String generateTestData(int count) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+
         List<String> testDataList = IntStream.range(0, count).mapToObj(i -> {
             Integer min = LocalTime.now().getMinute() + i; // Ensure IDs
 
@@ -403,9 +409,14 @@ public class MCATLYSTApiService {
             String description = "EXAMPLE ROAD " + min;
             double latitude = -1.032914;
             double longitude = 1.032914;
-            return String.format("{\"pk\": %d, \"site_id\": %d, \"name\": \"%s\", \"description\": \"%s\", \"latitude\": %f, \"longitude\": %f, \"asset_management_id\": \"SLRK\", \"class_scheme_name\": \"VRX\", \"survey_periods\": [{\"start_time\": \"2022-02-08T12:22:00\", \"end_time\": \"2022-02-17T12:13:00\"}], \"classifications\": [{\"name\": \"AR0\"}, {\"name\": \"SV\"}]}", i, siteId, siteName, description, latitude, longitude);
+            String startTime = LocalDateTime.now().format(formatter);
+            String endTime = LocalDateTime.now().plusWeeks(2).format(formatter);
+            int assetManagementId = random.nextInt(36) + 1; // 1부터 36까지 랜덤 값 생성
+
+            return String.format("{\"pk\": %d, \"site_id\": %d, \"name\": \"%s\", \"description\": \"%s\", \"latitude\": %f, \"longitude\": %f, \"asset_management_id\": \"%d\", \"class_scheme_name\": \"VRX\", \"survey_periods\": [{\"start_time\": \"%s\", \"end_time\": \"%s\"}], \"classifications\": [{\"name\": \"AR0\"}, {\"name\": \"SV\"}]}",
+                    i, siteId, siteName, description, latitude, longitude, assetManagementId, startTime, endTime);
         }).collect(Collectors.toList());
-        //logger.info(testDataList.toString());
+
         return "[" + String.join(",", testDataList) + "]";
     }
 

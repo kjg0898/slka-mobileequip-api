@@ -2,7 +2,6 @@ package org.neighbor21.slkaMobileEquipApi.hendler;
 
 import jakarta.annotation.PostConstruct;
 import kong.unirest.UnirestException;
-import org.neighbor21.slkaMobileEquipApi.config.Constants;
 import org.neighbor21.slkaMobileEquipApi.dto.individualVehicles.IndividualVehiclesDTO;
 import org.neighbor21.slkaMobileEquipApi.dto.listSite.ListSiteDTO;
 import org.neighbor21.slkaMobileEquipApi.service.MCATLYSTApiService;
@@ -16,14 +15,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /**
  * packageName    : org.neighbor21.slkaMobileEquipApi.hendler
@@ -40,17 +34,19 @@ import java.util.stream.IntStream;
 @Component
 public class ScheduledTasksHandler {
     private static final Logger logger = LoggerFactory.getLogger(ScheduledTasksHandler.class);
+
     // 마지막 차량 통과 시간 파일 저장 매니저
     private final VehicleUtils.LastVehiclePassTimeManager lastVehiclePassTimeManager = new VehicleUtils.LastVehiclePassTimeManager();
-    //배치사이즈
-    int batchSize = Constants.DEFAULT_BATCH_SIZE;
     private long totalProcessTime = 0;
     @Autowired
     private MCATLYSTApiService mcAtlystApiService;
+
     @Autowired
     private SiteService siteService;
+
     @Autowired
     private VehiclePassService vehiclePassService;
+
     @Autowired
     private SurveyPeriodService surveyPeriodService;
 
@@ -63,28 +59,26 @@ public class ScheduledTasksHandler {
     }
 
     /**
-     * 시간 마다 List Sites 장소 목록을 호출하여 TL_MVMNEQ_CUR 테이블에 이동형 장비 설치위치 관리를 업데이트 한다.
-     * TL_RIS_ROADWIDTH api 호출
+     * 1시간 마다 List Sites 장소 목록을 호출하여 TL_MVMNEQ_CUR 테이블에 이동형 장비 설치위치 관리를 업데이트 한다.
      */
-    @Scheduled(cron = "${scheduler.cron.listSites}")
+    @Scheduled(cron = "${scheduler.cron.listSites}") // TL_RIS_ROADWIDTH api 호출
     public void fetchAndCacheListSite() {
         long processStartTime = System.currentTimeMillis();
         try {
+            long fetchStartTime = System.currentTimeMillis();
             List<ListSiteDTO> listSites = mcAtlystApiService.listSites(); // 수집
+            long fetchEndTime = System.currentTimeMillis();
+            logger.info("listSites API 호출에 걸린 총 시간: {} ms", (fetchEndTime - fetchStartTime));
 
             listSites.forEach(listSite -> mcAtlystApiService.cacheSite(listSite.getSite_id()));
 
             //저장
             if (!listSites.isEmpty()) {
-                List<List<ListSiteDTO>> batchedListSites = createBatches(listSites, batchSize);
-                batchedListSites.parallelStream().forEach(batch -> {
-                    try {
-                        siteService.saveSiteLogs(listSites);
-                        surveyPeriodService.saveSurveyPeriods(listSites);
-                    } catch (Exception e) {
-                        handleApiException("Failed to save site logs and survey periods", e);
-                    }
-                });
+                long dbStartTime = System.currentTimeMillis();
+                siteService.saveSiteLogs(listSites);
+                surveyPeriodService.saveSurveyPeriods(listSites);
+                long dbEndTime = System.currentTimeMillis();
+                logger.info("fetchAndCacheListSite 메서드에서 데이터베이스 삽입 작업에 걸린 시간: {} ms", (dbEndTime - dbStartTime));
             }
         } catch (UnirestException e) {
             handleApiException("Failed to fetch and cache list sites", e);
@@ -92,13 +86,12 @@ public class ScheduledTasksHandler {
             long processEndTime = System.currentTimeMillis();
             long processTime = processEndTime - processStartTime;
             totalProcessTime += processTime;
-            logger.info("fetchAndCacheListSite 메서드의 전체 실행 시간: {} ms", processTime);
-            logger.info("누적 전체 실행 시간: {} ms", totalProcessTime);
+            logger.info("listSites api --> db 적재 까지 전체 실행 시간: {} ms", processTime);
         }
     }
 
     /**
-     * 분 간격으로 Individual Vehicles 개별 차량 호출 후 데이터를 처리한다.
+     * 5분 간격으로 Individual Vehicles 개별 차량 호출 후 데이터를 처리한다.
      */
     @Scheduled(cron = "${scheduler.cron.IndividualVehicles}") // TL_RIS_ROADWIDTH api 호출
     public void fetchIndividualVehicles() {
@@ -109,46 +102,36 @@ public class ScheduledTasksHandler {
 
         long processStartTime = System.currentTimeMillis();
         Set<Integer> siteCache = mcAtlystApiService.getSiteCache();
-        List<Integer> siteCacheList = new ArrayList<>(siteCache);
-        List<List<Integer>> batchedSiteIds = createBatches(siteCacheList, batchSize);
 
-        AtomicLong cumulativeTime = new AtomicLong();
+        List<CompletableFuture<Void>> futures = siteCache.stream()
+                .map(siteId -> CompletableFuture.runAsync(() -> processSite(siteId)))
+                .toList();
 
-        batchedSiteIds.parallelStream().forEach(batch -> {
-            long batchStartTime = System.currentTimeMillis();
-            List<CompletableFuture<Void>> futures = batch.stream()
-                    .map(siteId -> CompletableFuture.runAsync(() -> processSite(siteId)))
-                    .collect(Collectors.toList());
-            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-            long batchEndTime = System.currentTimeMillis();
-            long batchProcessTime = batchEndTime - batchStartTime;
-            cumulativeTime.addAndGet(batchProcessTime);
-        });
-
+        // Wait for all tasks to complete (포크조인)
+        //CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
         long processEndTime = System.currentTimeMillis();
         long processTime = processEndTime - processStartTime;
-        long totalSitesProcessTime = cumulativeTime.get();
-
         totalProcessTime += processTime;
         logger.info("fetchIndividualVehicles 메서드의 전체 실행 시간: {} ms", processTime);
         logger.info("누적 전체 실행 시간: {} ms", totalProcessTime);
-        logger.info("Total time spent processing all sites: {} ms", totalSitesProcessTime);
+
+        // 모든 작업이 완료된 후 마지막 차량 통과 시간을 파일에 저장
+        VehicleUtils.LastVehiclePassTimeManager.saveLastVehiclePassTimes();
     }
 
     private void processSite(Integer siteId) {
         try {
+            long fetchStartTime = System.currentTimeMillis();
             List<IndividualVehiclesDTO> vehicles = mcAtlystApiService.individualVehicles(siteId);
+            long fetchEndTime = System.currentTimeMillis();
+            logger.info(" IndividualVehicle API 수집 총 시간 (siteId: {}): {} ms", siteId, (fetchEndTime - fetchStartTime));
 
             if (!vehicles.isEmpty()) {
-                List<List<IndividualVehiclesDTO>> batchedVehicles = createBatches(vehicles, batchSize);
-                batchedVehicles.parallelStream().forEach(batch -> {
-                    try {
-                        vehiclePassService.saveVehiclePasses(batch);
-                    } catch (Exception e) {
-                        handleApiException("Failed to save vehicle passes", e);
-                    }
-                });
+                long dbStartTime = System.currentTimeMillis();
+                vehiclePassService.saveVehiclePasses(vehicles);
+                long dbEndTime = System.currentTimeMillis();
+                logger.info("fetchIndividualVehicles 메서드에서 데이터베이스 삽입 작업에 걸린 시간  (siteId: {}): {} ms", siteId, (dbEndTime - dbStartTime));
             }
         } catch (UnirestException e) {
             handleApiException(String.format("Failed to fetch individual vehicles for siteId: %s", siteId), e);
@@ -163,20 +146,5 @@ public class ScheduledTasksHandler {
      */
     private void handleApiException(String message, Exception e) {
         logger.error(message, e);
-    }
-
-    private <T> List<List<T>> createBatches(List<T> sourceList, int batchSize) {
-        int size = sourceList.size();
-        if (size <= 0 || batchSize <= 0) {
-            return Collections.emptyList();
-        }
-        int fullBatches = size / batchSize;
-        int remainingItems = size % batchSize;
-        List<List<T>> batches = new ArrayList<>(fullBatches + (remainingItems > 0 ? 1 : 0));
-        IntStream.range(0, fullBatches).forEach(i -> batches.add(sourceList.subList(i * batchSize, (i + 1) * batchSize)));
-        if (remainingItems > 0) {
-            batches.add(sourceList.subList(fullBatches * batchSize, size));
-        }
-        return batches;
     }
 }

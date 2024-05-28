@@ -21,7 +21,9 @@ import java.sql.Timestamp;
  */
 public interface TL_MVMNEQ_PERIODRepository extends JpaRepository<TL_MVMNEQ_PERIODEntity, TL_MVMNEQ_PERIOD_IdEntity> {
 
-    // TL_MVMNEQ_PERIOD 테이블에서 해당하는 instllcId 중의 최신 startTime 값 이 들어있는 릴레이션 의 순번(SQNO) 값을 가져오는 쿼리
-    @Query("SELECT COALESCE(MAX(p.id.sequenceNo), 0) FROM TL_MVMNEQ_PERIODEntity p WHERE p.startTime = :startTime AND p.id.instllcId = :instllcId")
-    Integer findMaxSequenceNoByInstllcId(@Param("startTime") Timestamp startTime, @Param("instllcId") String instllcId);
+
+
+    // 네이티브 쿼리를 사용하여 해당 instllcId 중 가장 높은 순번값 가져옴
+    @Query(value = "SELECT COALESCE(MAX(sqno), 0) FROM srlk.tl_mvmneq_period WHERE instllc_id = :instllcId", nativeQuery = true)
+    Integer findMaxSequenceNoByInstllcId(@Param("instllcId") String instllcId);
 }

@@ -61,11 +61,21 @@ public class VehicleUtils {
          * @return 마지막 차량 통과 시간
          */
         public static Timestamp getLastVehiclePassTime(Integer siteId) {
-            return Optional.ofNullable(lastVehiclePassTimeMap.get(siteId))
-                    .orElseGet(() -> {
-                        logger.info("No existing timestamp found for siteId {}. Returning current time.", siteId);
-                        return new Timestamp(System.currentTimeMillis());
+            return Optional.ofNullable(lastVehiclePassTimeMap.get(siteId)) // Map에서 siteId에 해당하는 값을 가져와 Optional로 감쌈
+                    .orElseGet(() -> { // 만약 값이 없으면 (Optional이 비어있으면) 실행
+                        logger.info("No existing timestamp found for siteId {}. Returning current time minus one hour.", siteId);
+                        return new Timestamp(System.currentTimeMillis() - 3600000); // 현재 시간에서 1시간(3600000 밀리초) 뺀 값을 반환
                     });
+        }
+
+        /**
+         * siteId에 대한 마지막 차량 통과 시간을 업데이트합니다.
+         *
+         * @param siteId      장소 ID
+         * @param passTime    업데이트할 통과 시간
+         */
+        public static void updateLastVehiclePassTime(Integer siteId, Timestamp passTime) {
+            lastVehiclePassTimeMap.put(siteId, passTime);
         }
 
         /**
@@ -77,15 +87,15 @@ public class VehicleUtils {
                 if (!Files.exists(path)) {
                     logger.info("No existing file found. A new file will be created.");
                     saveLastVehiclePassTimes();  // 파일이 존재하지 않으면 파일을 생성합니다.
+                } else {
+                    List<String> lines = Files.readAllLines(path);
+                    lines.forEach(line -> {
+                        String[] parts = line.split(",");
+                        Integer siteId = Integer.parseInt(parts[0]);
+                        Timestamp timestamp = Timestamp.valueOf(parts[1]);
+                        lastVehiclePassTimeMap.put(siteId, timestamp);
+                    });
                 }
-
-                List<String> lines = Files.readAllLines(path);
-                lines.forEach(line -> {
-                    String[] parts = line.split(",");
-                    Integer siteId = Integer.parseInt(parts[0]);
-                    Timestamp timestamp = Timestamp.valueOf(parts[1]);
-                    lastVehiclePassTimeMap.put(siteId, timestamp);
-                });
             } catch (IOException e) {
                 logger.error("Failed to load last processed times", e);
             }
@@ -94,12 +104,14 @@ public class VehicleUtils {
         /**
          * 마지막 차량 통과 시간을 파일에 저장합니다.
          */
-        public void saveLastVehiclePassTimes() {
+        public static void saveLastVehiclePassTimes() {
             List<String> lines = lastVehiclePassTimeMap.entrySet().stream()
                     .map(entry -> entry.getKey() + "," + entry.getValue().toString())
                     .collect(Collectors.toList());
             try {
-                Files.write(Paths.get(LAST_PROCESSED_FILENAME), lines);
+                Path path = Paths.get(LAST_PROCESSED_FILENAME);
+                Files.write(path, lines);
+                logger.info("Successfully saved last processed times to {}", LAST_PROCESSED_FILENAME);
             } catch (IOException e) {
                 logger.error("Failed to save last processed times", e);
             }

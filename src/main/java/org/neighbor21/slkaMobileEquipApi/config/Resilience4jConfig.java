@@ -28,8 +28,8 @@ public class Resilience4jConfig {
     @Bean
     public RetryConfig defaultRetryConfig() {
         return RetryConfig.custom()
-                .maxAttempts(1) // 최대 재시도 횟수
-                .waitDuration(java.time.Duration.ofMillis(2000)) // 각 재시도 사이의 대기 시간
+                .maxAttempts(2) // 최대 재시도 횟수
+                .waitDuration(java.time.Duration.ofMillis(61000)) // 각 재시도 사이의 대기 시간
                 .retryExceptions(Exception.class) // 재시도할 예외 유형
                 .build();
     }

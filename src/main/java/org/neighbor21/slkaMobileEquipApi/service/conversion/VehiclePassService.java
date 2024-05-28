@@ -1,7 +1,7 @@
 package org.neighbor21.slkaMobileEquipApi.service.conversion;
 
-
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.neighbor21.slkaMobileEquipApi.dto.individualVehicles.IndividualVehiclesDTO;
 import org.neighbor21.slkaMobileEquipApi.entity.TL_MVMNEQ_PASSEntity;
 import org.neighbor21.slkaMobileEquipApi.entity.compositeKey.TL_MVMNEQ_PASS_IdEntity;
@@ -43,6 +43,9 @@ public class VehiclePassService {
     @Autowired
     private BatchService batchService;
 
+    @PersistenceContext
+    private EntityManager entityManager;
+
     /**
      * 개별 차량 통과 정보를 받아와서 데이터베이스에 저장하는 메소드.
      *
@@ -51,6 +54,8 @@ public class VehiclePassService {
     @Transactional
     public void saveVehiclePasses(List<IndividualVehiclesDTO> vehicles) {
         List<TL_MVMNEQ_PASSEntity> passEntities = new ArrayList<>();
+
+
         vehicles.forEach(vehicle -> {
             try {
                 Integer siteId = vehicle.getSiteId();
@@ -85,19 +90,38 @@ public class VehiclePassService {
         // 엔티티 리스트를 배치로 삽입
         long dbStartTime = System.currentTimeMillis();
         try {
-            long startTime = System.currentTimeMillis();
             batchService.batchInsertWithRetry(passEntities, this::insertEntity);
-            long endTime = System.currentTimeMillis();
-            logger.info("batchInsertWithRetry 메서드에서 TL_MVMNEQ_PASSEntity 배치 삽입에 걸린 시간: {} ms", (endTime - startTime));
-            //logger.info("TL_MVMNEQ_PASS 배치 삽입 완료.");
         } catch (Exception e) {
             logger.error("TL_MVMNEQ_PASS 배치 삽입 실패", e);
         }
         long dbEndTime = System.currentTimeMillis();
         logger.info("saveVehiclePasses 메서드에서 데이터베이스 삽입 작업에 걸린 시간: {} ms", (dbEndTime - dbStartTime));
+
+        //설치위치별 마지막 통과차량 통과 시간(중복 조회를 피하기 위해 마지막 시간을 저장 한 후 다음번 api 호출 input 값의 시간값을 저장한 값으로 설정한다.)
+        // 업데이트된 최신 통과 시간을 기록
+        lastPassTimeMap.forEach(VehicleUtils.LastVehiclePassTimeManager::updateLastVehiclePassTime);
     }
 
-    private <T> void insertEntity(EntityManager entityManager, T entity) {
-        entityManager.persist(entity);
+    /**
+     * 개별 차량 통과 엔티티를 삽입하는 메소드.
+     *
+     * @param entityManager EntityManager
+     * @param entity        TL_MVMNEQ_PASSEntity
+     */
+    private void insertEntity(EntityManager entityManager, TL_MVMNEQ_PASSEntity entity) {
+        String query = "INSERT INTO srlk.tl_mvmneq_pass (vehicle_class, vehicle_headway, vehicle_length, vehicle_speed, instllc_id, pass_lane, pass_dt, vhcl_drct) " +
+                "VALUES (:vehicleClass, :vehicleHeadway, :vehicleLength, :vehicleSpeed, :instllcId, :passLane, :passDt, :vhclDrct) " +
+                "ON CONFLICT (pass_dt, vhcl_drct, pass_lane, instllc_id) DO NOTHING";
+
+        entityManager.createNativeQuery(query)
+                .setParameter("vehicleClass", entity.getVehicleClass())
+                .setParameter("vehicleHeadway", entity.getVehicleHeadway())
+                .setParameter("vehicleLength", entity.getVehicleLength())
+                .setParameter("vehicleSpeed", entity.getVehicleSpeed())
+                .setParameter("instllcId", entity.getId().getInstllcId())
+                .setParameter("passLane", entity.getId().getPassLane())
+                .setParameter("passDt", entity.getId().getPassTime())
+                .setParameter("vhclDrct", entity.getId().getVehicleDirection())
+                .executeUpdate();
     }
 }

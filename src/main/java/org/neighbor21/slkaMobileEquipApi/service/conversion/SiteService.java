@@ -69,26 +69,18 @@ public class SiteService {
         // 엔티티 리스트를 배치로 삽입
         long dbStartTime = System.currentTimeMillis();
         try {
-            long startTime = System.currentTimeMillis();
             batchService.batchInsertWithRetry(curEntities, this::insertCurrentEntity);
-            long endTime = System.currentTimeMillis();
-            logger.info("batchInsertWithRetry 메서드에서 TL_MVMNEQ_CUR_IdEntity 배치 삽입에 걸린 시간: {} ms", (endTime - startTime));
-            //logger.info("TL_MVMNEQ_CUR 배치 삽입 완료.");
         } catch (Exception e) {
             logger.error("TL_MVMNEQ_CUR 배치 삽입 실패", e);
         }
         try {
-            long startTime = System.currentTimeMillis();
             batchService.batchInsertWithRetry(logEntities, this::insertLogEntity);
-            long endTime = System.currentTimeMillis();
-            logger.info("batchInsertWithRetry 메서드에서 TL_MVMNEQ_LOGRepository 배치 삽입에 걸린 시간: {} ms", (endTime - startTime));
-            //logger.info("TL_MVMNEQ_LOG 배치 삽입 완료.");
+
         } catch (Exception e) {
             logger.error("TL_MVMNEQ_LOG 배치 삽입 실패", e);
         }
         long dbEndTime = System.currentTimeMillis();
-        logger.info("saveSiteLogs 메서드에서 전체 데이터베이스 삽입 작업에 걸린 시간: {} ms", (dbEndTime - dbStartTime));
-        //logger.info("TL_MVMNEQ_LOG 및 TL_MVMNEQ_CUR 배치 삽입 완료.");
+        logger.info("TL_MVMNEQ_LOG 및 TL_MVMNEQ_CUR 배치 삽입 작업에 걸린 시간: {} ms", (dbEndTime - dbStartTime));
     }
 
     /**
