@@ -54,7 +54,7 @@ dependencies {
     annotationProcessor "jakarta.persistence:jakarta.persistence-api"
 
     // PostgreSQL
-    runtimeOnly 'org.postgresql:postgresql'
+    runtimeOnly 'org.postgresql:postgresql:42.5.0'
 
     // Resilience4j
     implementation 'io.github.resilience4j:resilience4j-core:1.7.0'

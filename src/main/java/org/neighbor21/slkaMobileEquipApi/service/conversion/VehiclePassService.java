@@ -55,7 +55,6 @@ public class VehiclePassService {
     public void saveVehiclePasses(List<IndividualVehiclesDTO> vehicles) {
         List<TL_MVMNEQ_PASSEntity> passEntities = new ArrayList<>();
 
-
         vehicles.forEach(vehicle -> {
             try {
                 Integer siteId = vehicle.getSiteId();
@@ -90,7 +89,11 @@ public class VehiclePassService {
         // 엔티티 리스트를 배치로 삽입
         long dbStartTime = System.currentTimeMillis();
         try {
-            batchService.batchInsertWithRetry(passEntities, this::insertEntity);
+            batchService.batchInsertWithRetry(passEntities, entityManager::persist);
+            //하이버네이트에는 일시적으로 db 메모리를 1차캐시에 저장하는데, 네이티브 쿼리를 사용하면 그 캐쉬를 지나지 않고 바로 작용하기 때문에 네이티브쿼리
+            //작업이 끝난 후에 플러쉬 클리어를 해주는 것이 좋다. 안그러면 디비 메모리와 캐시의 불일치가 일어날수 있기때문이다.
+            entityManager.flush(); // 변경 사항을 데이터베이스에 반영
+            entityManager.clear(); // 영속성 컨텍스트를 비움
         } catch (Exception e) {
             logger.error("TL_MVMNEQ_PASS 배치 삽입 실패", e);
         }
@@ -100,28 +103,5 @@ public class VehiclePassService {
         //설치위치별 마지막 통과차량 통과 시간(중복 조회를 피하기 위해 마지막 시간을 저장 한 후 다음번 api 호출 input 값의 시간값을 저장한 값으로 설정한다.)
         // 업데이트된 최신 통과 시간을 기록
         lastPassTimeMap.forEach(VehicleUtils.LastVehiclePassTimeManager::updateLastVehiclePassTime);
-    }
-
-    /**
-     * 개별 차량 통과 엔티티를 삽입하는 메소드.
-     *
-     * @param entityManager EntityManager
-     * @param entity        TL_MVMNEQ_PASSEntity
-     */
-    private void insertEntity(EntityManager entityManager, TL_MVMNEQ_PASSEntity entity) {
-        String query = "INSERT INTO srlk.tl_mvmneq_pass (vehicle_class, vehicle_headway, vehicle_length, vehicle_speed, instllc_id, pass_lane, pass_dt, vhcl_drct) " +
-                "VALUES (:vehicleClass, :vehicleHeadway, :vehicleLength, :vehicleSpeed, :instllcId, :passLane, :passDt, :vhclDrct) " +
-                "ON CONFLICT (pass_dt, vhcl_drct, pass_lane, instllc_id) DO NOTHING";
-
-        entityManager.createNativeQuery(query)
-                .setParameter("vehicleClass", entity.getVehicleClass())
-                .setParameter("vehicleHeadway", entity.getVehicleHeadway())
-                .setParameter("vehicleLength", entity.getVehicleLength())
-                .setParameter("vehicleSpeed", entity.getVehicleSpeed())
-                .setParameter("instllcId", entity.getId().getInstllcId())
-                .setParameter("passLane", entity.getId().getPassLane())
-                .setParameter("passDt", entity.getId().getPassTime())
-                .setParameter("vhclDrct", entity.getId().getVehicleDirection())
-                .executeUpdate();
     }
 }

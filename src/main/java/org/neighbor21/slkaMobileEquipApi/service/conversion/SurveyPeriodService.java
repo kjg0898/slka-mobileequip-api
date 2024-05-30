@@ -1,8 +1,9 @@
 package org.neighbor21.slkaMobileEquipApi.service.conversion;
 
-
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.Query;
+import org.neighbor21.slkaMobileEquipApi.config.Constants;
 import org.neighbor21.slkaMobileEquipApi.dto.listSite.ListSiteDTO;
 import org.neighbor21.slkaMobileEquipApi.dto.listSite.SurveyPeriodDTO;
 import org.neighbor21.slkaMobileEquipApi.entity.TL_MVMNEQ_PERIODEntity;
@@ -18,23 +19,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.time.format.DateTimeParseException;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
- * packageName    : org.neighbor21.slkaMobileEquipApi.service.conversion
- * fileName       : SurveyPeriodService.java
- * author         : kjg08
- * date           : 24. 5. 21.
- * description    : 조사 기간 데이터를 처리하고 저장하는 서비스 클래스.
- * 이 클래스는 조사 기간 데이터를 받아와서 데이터베이스에 저장하는 작업을 수행한다.
- * ===========================================================
- * DATE              AUTHOR             NOTE
- * -----------------------------------------------------------
- * 24. 5. 21.        kjg08           최초 생성
+ * 조사 기간 데이터를 처리하고 저장하는 서비스 클래스.
  */
-
 @Service
 public class SurveyPeriodService {
 
@@ -49,7 +40,6 @@ public class SurveyPeriodService {
     @PersistenceContext
     private EntityManager entityManager;
 
-
     /**
      * 조사 기간 정보를 받아와서 데이터베이스에 저장하는 메소드.
      *
@@ -60,42 +50,63 @@ public class SurveyPeriodService {
         List<TL_MVMNEQ_PERIODEntity> periodEntities = new ArrayList<>();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-        periods.forEach(period -> {
-            try {
-                // 조사 기간을 시작 시간 기준으로 정렬 (스트림 사용 sorted)
-                List<SurveyPeriodDTO> sortedPeriods = period.getSurvey_periods().stream()
-                        .sorted(Comparator.comparing(SurveyPeriodDTO::getStart_time))
-                        .toList();
+        // 설치위치id 에 대한 최대순번을 한번에 가져오기 위해 먼저 모든 설치 위치 ID를 수집
+        List<String> instllcIds = periods.stream()
+                .map(period -> period.getSite_id().toString())
+                .distinct()
+                .collect(Collectors.toList());
 
-                String instllcId = period.getSite_id().toString();
-                // 현재 설치 위치 ID에 대한 최대 순번을 가져옴
-                Integer currentMaxSequence = tlMvmneqPeriodRepository.findMaxSequenceNoByInstllcId(instllcId);
+        // 모든 설치 위치 ID에 대한 최대 순번을 한 번에 조회
+        Map<String, Integer> maxSequenceMap = findMaxSequenceNoByInstllcIdsWithLogging(instllcIds);
 
-                // 각 조사 기간을 엔티티로 변환하여 리스트에 추가
-                for (int i = 0; i < sortedPeriods.size(); i++) {
-                    SurveyPeriodDTO periodDTO = sortedPeriods.get(i);
-                    TL_MVMNEQ_PERIODEntity periodEntity = new TL_MVMNEQ_PERIODEntity();
-                    TL_MVMNEQ_PERIOD_IdEntity periodIdEntity = new TL_MVMNEQ_PERIOD_IdEntity();
+        // 엔티티 생성 및 순번 미리 할당한다. 왜냐하면 같은 설치위치 id 에 연속으로 starttime 이 들어오게 된다면 순번을 계산할때에 중복이 나거나 불확실한값이 들어갈수 있는데,
+        // 이를 방지하려 매번 로직 안에서 조회를 하게 된다면 엄청난 성능의 저하가 일어나기 때문에 각각 처리로 들어가기 전에 한번에 미리 할당하는 과정
+        // 엔티티 생성 및 순번 미리 할당
+        for (ListSiteDTO period : periods) {
+            List<SurveyPeriodDTO> surveyPeriods = period.getSurvey_periods().stream()
+                    .sorted(Comparator.comparing(SurveyPeriodDTO::getStart_time))
+                    .collect(Collectors.toList());
 
-                    periodIdEntity.setCollectionDatetime(Timestamp.valueOf(LocalDateTime.now().format(formatter)));
-                    periodIdEntity.setSequenceNo(currentMaxSequence + i + 1);
-                    periodIdEntity.setInstllcId(instllcId);
+            String instllcId = period.getSite_id().toString();
+            Integer currentMaxSequence = maxSequenceMap.getOrDefault(instllcId, 0);
+
+            // 각 조사 기간을 엔티티로 변환하여 리스트에 추가
+            for (int i = 0; i < surveyPeriods.size(); i++) {
+                SurveyPeriodDTO periodDTO = surveyPeriods.get(i);
+                TL_MVMNEQ_PERIODEntity periodEntity = new TL_MVMNEQ_PERIODEntity();
+                TL_MVMNEQ_PERIOD_IdEntity periodIdEntity = new TL_MVMNEQ_PERIOD_IdEntity();
+
+                periodIdEntity.setCollectionDatetime(new Timestamp(System.currentTimeMillis()));
+                periodIdEntity.setSequenceNo(currentMaxSequence + i + 1);
+                periodIdEntity.setInstllcId(instllcId);
+
+                String startTimeStr = periodDTO.getStart_time().replace("T", " ");
+                String endTimeStr = periodDTO.getEnd_time().replace("T", " ");
+
+                try {
+                    LocalDateTime startTime = LocalDateTime.parse(startTimeStr, formatter);
+                    LocalDateTime endTime = LocalDateTime.parse(endTimeStr, formatter);
 
                     periodEntity.setId(periodIdEntity);
-                    periodEntity.setStartTime(Timestamp.valueOf(periodDTO.getStart_time().replace("T", " ")));
-                    periodEntity.setEndTime(Timestamp.valueOf(periodDTO.getEnd_time().replace("T", " ")));
+                    periodEntity.setStartTime(Timestamp.valueOf(startTime).toLocalDateTime());
+                    periodEntity.setEndTime(Timestamp.valueOf(endTime).toLocalDateTime());
 
                     periodEntities.add(periodEntity);
+                } catch (DateTimeParseException e) {
+                    logger.error("Failed to parse date: start time - {}, end time - {}", startTimeStr, endTimeStr, e);
+                    throw e;
                 }
-            } catch (Exception e) {
-                logger.error("TL_MVMNEQ_PERIOD 처리 중 오류 발생", e);
             }
-        });
+        }
 
         // 엔티티 리스트를 배치로 삽입
         long dbStartTime = System.currentTimeMillis();
         try {
-            batchService.batchInsertWithRetry(periodEntities, this::insertPeriodEntity);
+            batchService.batchInsertWithRetry(periodEntities, this::insertEntityInOrder);
+            //하이버네이트에는 일시적으로 db 메모리를 1차캐시에 저장하는데, 네이티브 쿼리를 사용하면 그 캐쉬를 지나지 않고 바로 작용하기 때문에 네이티브쿼리
+            //작업이 끝난 후에 플러쉬 클리어를 해주는 것이 좋다. 안그러면 디비 메모리와 캐시의 불일치가 일어날수 있기때문이다.
+            entityManager.flush(); // 변경 사항을 데이터베이스에 반영
+            entityManager.clear(); // 영속성 컨텍스트를 비움
         } catch (Exception e) {
             logger.error("TL_MVMNEQ_PERIOD 배치 삽입 실패", e);
         }
@@ -103,23 +114,39 @@ public class SurveyPeriodService {
         logger.info("TL_MVMNEQ_PERIOD 배치 삽입 작업에 걸린 시간: {} ms", (dbEndTime - dbStartTime));
     }
 
-    /**
-     * 조사 기간 엔티티를 삽입하는 메소드.
-     *
-     * @param entityManager EntityManager
-     * @param entity        TL_MVMNEQ_PERIODEntity
-     */
-    private void insertPeriodEntity(EntityManager entityManager, TL_MVMNEQ_PERIODEntity entity) {
-        String query = "INSERT INTO srlk.tl_mvmneq_period (clct_dt, instllc_id, sqno, start_dt, end_dt) " +
-                "VALUES (:clctDt, :instllcId, :sqno, :startDt, :endDt) " +
+
+    //컬럼에 들어갈 데이터 순서 강제 지정 하면서 쿼리
+    private void insertEntityInOrder(TL_MVMNEQ_PERIODEntity entity) {
+        String sql = "INSERT INTO srlk.tl_mvmneq_period (clct_dt, sqno, instllc_id, start_dt, end_dt) VALUES (?, ?, ?, ?, ?) " +
                 "ON CONFLICT (clct_dt, instllc_id, sqno) DO NOTHING";
 
-        entityManager.createNativeQuery(query)
-                .setParameter("clctDt", entity.getId().getCollectionDatetime())
-                .setParameter("instllcId", entity.getId().getInstllcId())
-                .setParameter("sqno", entity.getId().getSequenceNo())
-                .setParameter("startDt", entity.getStartTime())
-                .setParameter("endDt", entity.getEndTime())
-                .executeUpdate();
+        Query query = entityManager.createNativeQuery(sql);
+        query.setParameter(1, entity.getId().getCollectionDatetime());
+        query.setParameter(2, entity.getId().getSequenceNo());
+        query.setParameter(3, entity.getId().getInstllcId());
+        query.setParameter(4, entity.getStartTime());
+        query.setParameter(5, entity.getEndTime());
+        query.executeUpdate();
     }
+
+    // 설치위치 아이디에 대한 최대 순번 값을 조회한 결과를 Map으로 변환
+    public Map<String, Integer> findMaxSequenceNoByInstllcIdsWithLogging(List<String> instllcIds) {
+        Map<String, Integer> maxSequenceMap = new HashMap<>();
+
+
+        int maxSequenceBatchSize = 4000 + Constants.DEFAULT_BATCH_SIZE;  // 배치 크기를 설정합니다.
+        for (int i = 0; i < instllcIds.size(); i += maxSequenceBatchSize) {
+            int end = Math.min(i + maxSequenceBatchSize, instllcIds.size());
+            List<String> batch = instllcIds.subList(i, end);
+            List<Object[]> results = tlMvmneqPeriodRepository.findMaxSequenceNoByInstllcIds(batch);
+
+            for (Object[] result : results) {
+                maxSequenceMap.put((String) result[0], ((Number) result[1]).intValue());
+            }
+        }
+
+
+        return maxSequenceMap;
+    }
+
 }

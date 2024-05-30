@@ -19,6 +19,7 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Consumer;
@@ -73,7 +74,7 @@ public class MCATLYSTApiService {
 // 여러 개의 테스트 데이터를 자동으로 생성
         try {
             // 여러 개의 테스트 데이터를 자동으로 생성
-            String testData = generateTestData(100000); // 원하는 개수만큼 생성
+            String testData = generateTestData(800); // 원하는 개수만큼 생성
 
             HttpResponse<String> response = new HttpResponse<String>() {
                 @Override
@@ -218,7 +219,7 @@ public class MCATLYSTApiService {
 //                    .body(VehiclesBody)
 //                    .asString();
 
-            String testData = generateIndividualVehiclesTestData(siteId, 0);
+            String testData = generateIndividualVehiclesTestData(siteId, 1);
 
             HttpResponse<String> response = new HttpResponse<String>() {
                 @Override
@@ -409,16 +410,30 @@ public class MCATLYSTApiService {
             String description = "EXAMPLE ROAD " + min;
             double latitude = -1.032914;
             double longitude = 1.032914;
-            String startTime = LocalDateTime.now().format(formatter);
-            String endTime = LocalDateTime.now().plusWeeks(2).format(formatter);
             int assetManagementId = random.nextInt(36) + 1; // 1부터 36까지 랜덤 값 생성
 
-            return String.format("{\"pk\": %d, \"site_id\": %d, \"name\": \"%s\", \"description\": \"%s\", \"latitude\": %f, \"longitude\": %f, \"asset_management_id\": \"%d\", \"class_scheme_name\": \"VRX\", \"survey_periods\": [{\"start_time\": \"%s\", \"end_time\": \"%s\"}], \"classifications\": [{\"name\": \"AR0\"}, {\"name\": \"SV\"}]}",
-                    i, siteId, siteName, description, latitude, longitude, assetManagementId, startTime, endTime);
+            // Generate exactly 100 survey periods with random times for the same site_id
+            List<String> surveyPeriods = IntStream.range(0, 100)
+                    .mapToObj(j -> {
+                        // Generate a start time between now - 5 days and now + 5 days
+                        LocalDateTime startTime = LocalDateTime.now()
+                                .minusDays(5)
+                                .plusDays(random.nextInt(10))
+                                .plusMinutes(j * 10);
+                        LocalDateTime endTime = startTime.plusWeeks(2);
+                        return String.format("{\"start_time\": \"%s\", \"end_time\": \"%s\"}",
+                                startTime.format(formatter), endTime.format(formatter));
+                    })
+                    .collect(Collectors.toList());
+
+            return String.format("{\"pk\": %d, \"site_id\": %d, \"name\": \"%s\", \"description\": \"%s\", \"latitude\": %f, \"longitude\": %f, \"asset_management_id\": \"%d\", \"class_scheme_name\": \"VRX\", \"survey_periods\": [%s], \"classifications\": [{\"name\": \"AR0\"}, {\"name\": \"SV\"}]}",
+                    i, siteId, siteName, description, latitude, longitude, assetManagementId, String.join(",", surveyPeriods));
         }).collect(Collectors.toList());
 
         return "[" + String.join(",", testDataList) + "]";
     }
+
+
 
     /**
      * 여러 개의 테스트 Individual Vehicles 데이터를 생성하는 메소드
@@ -437,7 +452,7 @@ public class MCATLYSTApiService {
         List<Map<String, Object>> dataList = IntStream.range(0, count).mapToObj(i -> {
             Map<String, Object> data = new HashMap<>();
             data.put("site_id", siteId);
-            data.put("timestamp", LocalDateTime.now().minusMinutes(i).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + "Z");
+            data.put("timestamp", LocalDateTime.now(ZoneId.of("Asia/Colombo")).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + "Z");
             data.put("localtime", LocalDateTime.now().minusMinutes(i).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
             data.put("heading", i % 2 == 0 ? "North" : "South");
             data.put("velocity(m/s)", BigDecimal.valueOf(Math.random() * 10));

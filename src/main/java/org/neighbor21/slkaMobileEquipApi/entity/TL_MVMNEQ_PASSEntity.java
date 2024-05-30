@@ -6,6 +6,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.SQLInsert;
 import org.neighbor21.slkaMobileEquipApi.entity.compositeKey.TL_MVMNEQ_PASS_IdEntity;
 
 import java.math.BigDecimal;
@@ -25,6 +26,9 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 @Table(name = "TL_MVMNEQ_PASS", schema = "srlk")
+@SQLInsert(sql = "INSERT INTO srlk.tl_mvmneq_pass (vehicle_class, vehicle_headway, vehicle_length, vehicle_speed, instllc_id, pass_lane, pass_dt, vhcl_drct) " +
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?) " +
+        "ON CONFLICT (pass_dt, vhcl_drct, pass_lane, instllc_id) DO NOTHING")
 public class TL_MVMNEQ_PASSEntity {
 
     @EmbeddedId

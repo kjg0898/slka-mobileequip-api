@@ -37,7 +37,6 @@ public class TL_MVMNEQ_PERIOD_IdEntity implements Serializable {
     @Column(name = "INSTLLC_ID", length = 32)
     private String instllcId;
 
-
     // Default constructor
     public TL_MVMNEQ_PERIOD_IdEntity() {
     }

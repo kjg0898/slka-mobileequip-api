@@ -74,11 +74,8 @@ public class ScheduledTasksHandler {
 
             //저장
             if (!listSites.isEmpty()) {
-                long dbStartTime = System.currentTimeMillis();
                 siteService.saveSiteLogs(listSites);
                 surveyPeriodService.saveSurveyPeriods(listSites);
-                long dbEndTime = System.currentTimeMillis();
-                logger.info("fetchAndCacheListSite 메서드에서 데이터베이스 삽입 작업에 걸린 시간: {} ms", (dbEndTime - dbStartTime));
             }
         } catch (UnirestException e) {
             handleApiException("Failed to fetch and cache list sites", e);
@@ -114,7 +111,6 @@ public class ScheduledTasksHandler {
         long processTime = processEndTime - processStartTime;
         totalProcessTime += processTime;
         logger.info("fetchIndividualVehicles 메서드의 전체 실행 시간: {} ms", processTime);
-        logger.info("누적 전체 실행 시간: {} ms", totalProcessTime);
 
         // 모든 작업이 완료된 후 마지막 차량 통과 시간을 파일에 저장
         VehicleUtils.LastVehiclePassTimeManager.saveLastVehiclePassTimes();
@@ -128,10 +124,7 @@ public class ScheduledTasksHandler {
             logger.info(" IndividualVehicle API 수집 총 시간 (siteId: {}): {} ms", siteId, (fetchEndTime - fetchStartTime));
 
             if (!vehicles.isEmpty()) {
-                long dbStartTime = System.currentTimeMillis();
                 vehiclePassService.saveVehiclePasses(vehicles);
-                long dbEndTime = System.currentTimeMillis();
-                logger.info("fetchIndividualVehicles 메서드에서 데이터베이스 삽입 작업에 걸린 시간  (siteId: {}): {} ms", siteId, (dbEndTime - dbStartTime));
             }
         } catch (UnirestException e) {
             handleApiException(String.format("Failed to fetch individual vehicles for siteId: %s", siteId), e);

@@ -6,6 +6,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.SQLInsert;
 import org.neighbor21.slkaMobileEquipApi.entity.compositeKey.TL_MVMNEQ_CUR_IdEntity;
 
 import java.math.BigDecimal;
@@ -25,6 +26,8 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 @Table(name = "TL_MVMNEQ_CUR", schema = "srlk")
+@SQLInsert(sql = "INSERT INTO srlk.tl_mvmneq_cur (eqpmnt_id, instllc_descr, instllc_nm, latitude, longitude, instllc_id) VALUES (?, ?, ?, ?, ?, ?) " +
+        "ON CONFLICT (instllc_id) DO UPDATE SET eqpmnt_id = EXCLUDED.eqpmnt_id, instllc_descr = EXCLUDED.instllc_descr, instllc_nm = EXCLUDED.instllc_nm, latitude = EXCLUDED.latitude, longitude = EXCLUDED.longitude")
 public class TL_MVMNEQ_CUREntity {
 
 

@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.sql.Timestamp;
+import java.util.List;
 
 /**
  * packageName    : org.neighbor21.slkaMobileEquipApi.jpaRepository
@@ -21,9 +22,8 @@ import java.sql.Timestamp;
  */
 public interface TL_MVMNEQ_PERIODRepository extends JpaRepository<TL_MVMNEQ_PERIODEntity, TL_MVMNEQ_PERIOD_IdEntity> {
 
+    //해당 instllcId 에 대한 각각 가장 높은 순번값 가져옴
+    @Query(value = "SELECT instllc_id, COALESCE(MAX(sqno), 0) as max_sqno FROM srlk.tl_mvmneq_period WHERE instllc_id IN :instllcIds GROUP BY instllc_id", nativeQuery = true)
+    List<Object[]> findMaxSequenceNoByInstllcIds(@Param("instllcIds") List<String> instllcIds);
 
-
-    // 네이티브 쿼리를 사용하여 해당 instllcId 중 가장 높은 순번값 가져옴
-    @Query(value = "SELECT COALESCE(MAX(sqno), 0) FROM srlk.tl_mvmneq_period WHERE instllc_id = :instllcId", nativeQuery = true)
-    Integer findMaxSequenceNoByInstllcId(@Param("instllcId") String instllcId);
 }
