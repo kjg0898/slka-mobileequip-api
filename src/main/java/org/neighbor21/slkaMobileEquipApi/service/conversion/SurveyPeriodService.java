@@ -1,5 +1,6 @@
 package org.neighbor21.slkaMobileEquipApi.service.conversion;
 
+import org.neighbor21.slkaMobileEquipApi.config.Constants;
 import org.neighbor21.slkaMobileEquipApi.dto.listSite.ListSiteDTO;
 import org.neighbor21.slkaMobileEquipApi.dto.listSite.SurveyPeriodDTO;
 import org.neighbor21.slkaMobileEquipApi.entity.TL_MVMNEQ_PERIODEntity;
@@ -111,9 +112,9 @@ public class SurveyPeriodService {
     public Map<String, Integer> findMaxSequenceNoByInstllcIdsWithLogging(List<String> instllcIds) {
         Map<String, Integer> maxSequenceMap = new HashMap<>();
 
-        int maxSequenceBatchSize = 4000; // 배치 크기를 설정
-        for (int i = 0; i < instllcIds.size(); i += maxSequenceBatchSize) {
-            int end = Math.min(i + maxSequenceBatchSize, instllcIds.size());
+        int batchSize = Constants.DEFAULT_BATCH_SIZE; // 배치 크기를 설정
+        for (int i = 0; i < instllcIds.size(); i += batchSize) {
+            int end = Math.min(i + batchSize, instllcIds.size());
             List<String> batch = instllcIds.subList(i, end);
             List<Object[]> results = tlMvmneqPeriodRepository.findMaxSequenceNoByInstllcIds(batch);
 
