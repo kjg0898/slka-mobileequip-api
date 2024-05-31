@@ -71,8 +71,8 @@ public class VehicleUtils {
         /**
          * siteId에 대한 마지막 차량 통과 시간을 업데이트합니다.
          *
-         * @param siteId      장소 ID
-         * @param passTime    업데이트할 통과 시간
+         * @param siteId   장소 ID
+         * @param passTime 업데이트할 통과 시간
          */
         public static void updateLastVehiclePassTime(Integer siteId, Timestamp passTime) {
             lastVehiclePassTimeMap.put(siteId, passTime);

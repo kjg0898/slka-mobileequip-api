@@ -71,7 +71,7 @@ public class BatchService {
                                 persistFunction.accept(entity); // 엔티티 삽입 함수 호출
                             } catch (Exception e) {
                                 logger.error("Error persisting entity {}: {}", entity, e.getMessage(), e);
-                                throw e; // Rethrow to handle in outer catch
+                                throw e; // 외부 catch에서 처리하도록 다시 던짐
                             }
                         }
                         entityManager.flush(); // 변경 사항을 데이터베이스에 반영
@@ -140,22 +140,27 @@ public class BatchService {
         String sql = "INSERT INTO srlk.tl_mvmneq_period (clct_dt, sqno, instllc_id, start_dt, end_dt) VALUES (?, ?, ?, ?, ?) " +
                 "ON CONFLICT (clct_dt, instllc_id, sqno) DO NOTHING";
 
+        // 데이터베이스에 연결을 설정합니다.
         try (Connection connection = dataSource.getConnection()) {
             connection.setAutoCommit(false); // 자동 커밋 비활성화
+
+            // 배치 실행을 위한 SQL 문을 준비합니다. PreparedStatement(동적으로 sql 처리)
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 for (TL_MVMNEQ_PERIODEntity entity : periodEntities) {
+                    // 엔티티에서 PreparedStatement의 매개변수를 설정합니다.
                     statement.setTimestamp(1, entity.getId().getCollectionDatetime());
                     statement.setInt(2, entity.getId().getSequenceNo());
                     statement.setString(3, entity.getId().getInstllcId());
                     statement.setTimestamp(4, Timestamp.valueOf(entity.getStartTime()));
                     statement.setTimestamp(5, Timestamp.valueOf(entity.getEndTime()));
-                    statement.addBatch();
+                    statement.addBatch(); // 배치에 문을 추가합니다.
                 }
 
-                statement.executeBatch(); // 배치 실행
-                connection.commit(); // 커밋
+                // 배치 실행
+                statement.executeBatch();
+                connection.commit(); // 트랜잭션 커밋
             } catch (SQLException e) {
-                connection.rollback(); // 롤백
+                connection.rollback(); // 오류가 발생하면 트랜잭션 롤백
                 throw e;
             }
         }

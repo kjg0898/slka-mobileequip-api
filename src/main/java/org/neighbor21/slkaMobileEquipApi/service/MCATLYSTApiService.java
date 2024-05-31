@@ -6,12 +6,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import kong.unirest.*;
 import org.neighbor21.slkaMobileEquipApi.dto.individualVehicles.IndividualVehiclesDTO;
 import org.neighbor21.slkaMobileEquipApi.dto.listSite.ListSiteDTO;
-import org.neighbor21.slkaMobileEquipApi.service.conversion.VehiclePassService;
 import org.neighbor21.slkaMobileEquipApi.service.log.LogService;
 import org.neighbor21.slkaMobileEquipApi.service.util.VehicleUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -419,7 +417,7 @@ public class MCATLYSTApiService {
                         LocalDateTime startTime = LocalDateTime.now()
                                 .minusDays(5)
                                 .plusDays(random.nextInt(10))
-                                .plusMinutes(j * 10);
+                                .plusMinutes(j * 10L);
                         LocalDateTime endTime = startTime.plusWeeks(2);
                         return String.format("{\"start_time\": \"%s\", \"end_time\": \"%s\"}",
                                 startTime.format(formatter), endTime.format(formatter));
@@ -432,7 +430,6 @@ public class MCATLYSTApiService {
 
         return "[" + String.join(",", testDataList) + "]";
     }
-
 
 
     /**

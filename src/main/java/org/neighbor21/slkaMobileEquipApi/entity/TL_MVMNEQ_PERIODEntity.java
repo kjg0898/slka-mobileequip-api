@@ -6,10 +6,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.SQLInsert;
 import org.neighbor21.slkaMobileEquipApi.entity.compositeKey.TL_MVMNEQ_PERIOD_IdEntity;
 
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
 /**
@@ -37,5 +35,5 @@ public class TL_MVMNEQ_PERIODEntity {
     private LocalDateTime startTime;
     // 종료 일시
     @Column(name = "END_DT")
-    private LocalDateTime  endTime;
+    private LocalDateTime endTime;
 }

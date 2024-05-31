@@ -33,7 +33,6 @@ public class SurveyPeriodService {
     @Autowired
     private BatchService batchService;
 
-
     /**
      * 조사 기간 정보를 받아와서 데이터베이스에 저장하는 메소드.
      *
@@ -53,9 +52,7 @@ public class SurveyPeriodService {
         // 모든 설치 위치 ID에 대한 최대 순번을 한 번에 조회
         Map<String, Integer> maxSequenceMap = findMaxSequenceNoByInstllcIdsWithLogging(instllcIds);
 
-        // 엔티티 생성 및 순번 미리 할당한다. 왜냐하면 같은 설치위치 id 에 연속으로 starttime 이 들어오게 된다면 순번을 계산할때에 중복이 나거나 불확실한값이 들어갈수 있는데,
-        // 이를 방지하려 매번 로직 안에서 조회를 하게 된다면 엄청난 성능의 저하가 일어나기 때문에 각각 처리로 들어가기 전에 한번에 미리 할당하는 과정
-        // 엔티티 생성 및 순번 미리 할당
+        // 엔티티 생성 및 순번 미리 할당. 같은 설치위치 id에 연속으로 starttime이 들어오면 순번 계산 시 중복 또는 불확실한 값 발생 방지
         for (ListSiteDTO period : periods) {
             List<SurveyPeriodDTO> surveyPeriods = period.getSurvey_periods().stream()
                     .sorted(Comparator.comparing(SurveyPeriodDTO::getStart_time))
@@ -87,7 +84,7 @@ public class SurveyPeriodService {
 
                     periodEntities.add(periodEntity);
                 } catch (DateTimeParseException e) {
-                    logger.error("Failed to parse date: start time - {}, end time - {}", startTimeStr, endTimeStr, e);
+                    logger.error("날짜를 파싱하지 못했습니다: 시작 시간 - {}, 종료 시간 - {}", startTimeStr, endTimeStr, e);
                     throw e;
                 }
             }
@@ -96,15 +93,14 @@ public class SurveyPeriodService {
         // 엔티티 리스트를 배치로 삽입
         long dbStartTime = System.currentTimeMillis();
         try {
-            /*batchService.batchInsertWithRetry(periodEntities, this::insertEntityInOrder);*/
-            batchService.insertBatch(periodEntities); // JDBC를 사용한 배치 삽입
+            // JDBC를 사용한 배치 삽입
+            batchService.insertBatch(periodEntities);
         } catch (Exception e) {
             logger.error("TL_MVMNEQ_PERIOD 배치 삽입 실패", e);
         }
         long dbEndTime = System.currentTimeMillis();
         logger.info("TL_MVMNEQ_PERIOD 배치 삽입 작업에 걸린 시간: {} ms", (dbEndTime - dbStartTime));
     }
-
 
     /**
      * 설치위치 ID에 대한 최대 순번 값을 조회한 결과를 Map으로 변환하는 메소드.
