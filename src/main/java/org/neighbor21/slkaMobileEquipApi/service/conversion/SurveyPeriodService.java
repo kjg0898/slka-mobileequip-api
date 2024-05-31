@@ -1,9 +1,5 @@
 package org.neighbor21.slkaMobileEquipApi.service.conversion;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
-import jakarta.persistence.Query;
-import org.neighbor21.slkaMobileEquipApi.config.Constants;
 import org.neighbor21.slkaMobileEquipApi.dto.listSite.ListSiteDTO;
 import org.neighbor21.slkaMobileEquipApi.dto.listSite.SurveyPeriodDTO;
 import org.neighbor21.slkaMobileEquipApi.entity.TL_MVMNEQ_PERIODEntity;
@@ -37,8 +33,6 @@ public class SurveyPeriodService {
     @Autowired
     private BatchService batchService;
 
-    @PersistenceContext
-    private EntityManager entityManager;
 
     /**
      * 조사 기간 정보를 받아와서 데이터베이스에 저장하는 메소드.
@@ -65,7 +59,7 @@ public class SurveyPeriodService {
         for (ListSiteDTO period : periods) {
             List<SurveyPeriodDTO> surveyPeriods = period.getSurvey_periods().stream()
                     .sorted(Comparator.comparing(SurveyPeriodDTO::getStart_time))
-                    .collect(Collectors.toList());
+                    .toList();
 
             String instllcId = period.getSite_id().toString();
             Integer currentMaxSequence = maxSequenceMap.getOrDefault(instllcId, 0);
@@ -102,11 +96,8 @@ public class SurveyPeriodService {
         // 엔티티 리스트를 배치로 삽입
         long dbStartTime = System.currentTimeMillis();
         try {
-            batchService.batchInsertWithRetry(periodEntities, this::insertEntityInOrder);
-            //하이버네이트에는 일시적으로 db 메모리를 1차캐시에 저장하는데, 네이티브 쿼리를 사용하면 그 캐쉬를 지나지 않고 바로 작용하기 때문에 네이티브쿼리
-            //작업이 끝난 후에 플러쉬 클리어를 해주는 것이 좋다. 안그러면 디비 메모리와 캐시의 불일치가 일어날수 있기때문이다.
-            entityManager.flush(); // 변경 사항을 데이터베이스에 반영
-            entityManager.clear(); // 영속성 컨텍스트를 비움
+            /*batchService.batchInsertWithRetry(periodEntities, this::insertEntityInOrder);*/
+            batchService.insertBatch(periodEntities); // JDBC를 사용한 배치 삽입
         } catch (Exception e) {
             logger.error("TL_MVMNEQ_PERIOD 배치 삽입 실패", e);
         }
@@ -115,26 +106,16 @@ public class SurveyPeriodService {
     }
 
 
-    //컬럼에 들어갈 데이터 순서 강제 지정 하면서 쿼리
-    private void insertEntityInOrder(TL_MVMNEQ_PERIODEntity entity) {
-        String sql = "INSERT INTO srlk.tl_mvmneq_period (clct_dt, sqno, instllc_id, start_dt, end_dt) VALUES (?, ?, ?, ?, ?) " +
-                "ON CONFLICT (clct_dt, instllc_id, sqno) DO NOTHING";
-
-        Query query = entityManager.createNativeQuery(sql);
-        query.setParameter(1, entity.getId().getCollectionDatetime());
-        query.setParameter(2, entity.getId().getSequenceNo());
-        query.setParameter(3, entity.getId().getInstllcId());
-        query.setParameter(4, entity.getStartTime());
-        query.setParameter(5, entity.getEndTime());
-        query.executeUpdate();
-    }
-
-    // 설치위치 아이디에 대한 최대 순번 값을 조회한 결과를 Map으로 변환
+    /**
+     * 설치위치 ID에 대한 최대 순번 값을 조회한 결과를 Map으로 변환하는 메소드.
+     *
+     * @param instllcIds 설치위치 ID 리스트
+     * @return 최대 순번 값이 포함된 Map
+     */
     public Map<String, Integer> findMaxSequenceNoByInstllcIdsWithLogging(List<String> instllcIds) {
         Map<String, Integer> maxSequenceMap = new HashMap<>();
 
-
-        int maxSequenceBatchSize = 4000 + Constants.DEFAULT_BATCH_SIZE;  // 배치 크기를 설정합니다.
+        int maxSequenceBatchSize = 4000; // 배치 크기를 설정
         for (int i = 0; i < instllcIds.size(); i += maxSequenceBatchSize) {
             int end = Math.min(i + maxSequenceBatchSize, instllcIds.size());
             List<String> batch = instllcIds.subList(i, end);
@@ -145,8 +126,6 @@ public class SurveyPeriodService {
             }
         }
 
-
         return maxSequenceMap;
     }
-
 }

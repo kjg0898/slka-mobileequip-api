@@ -3,6 +3,7 @@ package org.neighbor21.slkaMobileEquipApi.service;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.neighbor21.slkaMobileEquipApi.config.Constants;
+import org.neighbor21.slkaMobileEquipApi.entity.TL_MVMNEQ_PERIODEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,8 +12,8 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import java.sql.BatchUpdateException;
-import java.sql.SQLException;
+import javax.sql.DataSource;
+import java.sql.*;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -24,6 +25,9 @@ import java.util.function.Consumer;
 public class BatchService {
     private static final Logger logger = LoggerFactory.getLogger(BatchService.class);
     private final TransactionTemplate transactionTemplate;
+
+    @Autowired
+    private DataSource dataSource;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -52,6 +56,7 @@ public class BatchService {
         final int[] lastLoggedProgress = {0}; // 배치 시작 시 진행률 초기화
 
         transactionTemplate.executeWithoutResult(status -> {
+
             // entities 리스트를 batchSize 크기만큼씩 나누어 처리하는 루프
             for (int i = 0; i < totalRecords; i += batchSize) {
                 // 현재 배치의 끝 인덱스를 계산
@@ -122,6 +127,37 @@ public class BatchService {
                     nextException.getErrorCode(),
                     nextException.getMessage());
             nextException = nextException.getNextException();
+        }
+    }
+
+    /**
+     * JDBC를 사용하여 배치로 데이터를 삽입하는 메소드.
+     *
+     * @param periodEntities 삽입할 엔티티 리스트
+     * @throws SQLException SQL 예외 발생 시
+     */
+    public void insertBatch(List<TL_MVMNEQ_PERIODEntity> periodEntities) throws SQLException {
+        String sql = "INSERT INTO srlk.tl_mvmneq_period (clct_dt, sqno, instllc_id, start_dt, end_dt) VALUES (?, ?, ?, ?, ?) " +
+                "ON CONFLICT (clct_dt, instllc_id, sqno) DO NOTHING";
+
+        try (Connection connection = dataSource.getConnection()) {
+            connection.setAutoCommit(false); // 자동 커밋 비활성화
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                for (TL_MVMNEQ_PERIODEntity entity : periodEntities) {
+                    statement.setTimestamp(1, entity.getId().getCollectionDatetime());
+                    statement.setInt(2, entity.getId().getSequenceNo());
+                    statement.setString(3, entity.getId().getInstllcId());
+                    statement.setTimestamp(4, Timestamp.valueOf(entity.getStartTime()));
+                    statement.setTimestamp(5, Timestamp.valueOf(entity.getEndTime()));
+                    statement.addBatch();
+                }
+
+                statement.executeBatch(); // 배치 실행
+                connection.commit(); // 커밋
+            } catch (SQLException e) {
+                connection.rollback(); // 롤백
+                throw e;
+            }
         }
     }
 }
