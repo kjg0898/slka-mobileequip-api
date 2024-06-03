@@ -35,7 +35,7 @@ public class VehicleUtils {
      * @param previousTimestamp 이전 차량의 타임스탬프
      * @return 차량 간 간격(초)
      */
-    public static int calculateHeadway(Timestamp currentTimestamp, Timestamp previousTimestamp) {
+    public static int calculateIntervarSeconds(Timestamp currentTimestamp, Timestamp previousTimestamp) {
         if (previousTimestamp == null) {
             return 0;  // 첫 번째 차량인 경우 간격은 0으로 설정
         }
@@ -61,7 +61,7 @@ public class VehicleUtils {
          * @return 마지막 차량 통과 시간
          */
         public static Timestamp getLastVehiclePassTime(Integer siteId) {
-            return Optional.ofNullable(lastVehiclePassTimeMap.get(siteId)) // Map에서 siteId에 해당하는 값을 가져와 Optional로 감쌈
+            return Optional.ofNullable(lastVehiclePassTimeMap.get(siteId)) // Map에서 siteId에 해당하는 값을 가져와 Optional로 감쌈 , 서비스가 시작될때 lastVehiclePassTimeMap 에 넣은 값을 가져오는것.
                     .orElseGet(() -> { // 만약 값이 없으면 (Optional이 비어있으면) 실행
                         logger.info("No existing timestamp found for siteId {}. Returning current time minus one hour.", siteId);
                         return new Timestamp(System.currentTimeMillis() - 3600000); // 현재 시간에서 1시간(3600000 밀리초) 뺀 값을 반환
@@ -79,7 +79,7 @@ public class VehicleUtils {
         }
 
         /**
-         * 마지막 차량 통과 시간을 파일에서 로드합니다.
+         * 마지막 차량 통과 시간을 파일에서 로드합니다.(프로그램이 시작될때 넣는다)
          */
         public void loadLastVehiclePassTimes() {
             Path path = Paths.get(LAST_PROCESSED_FILENAME);
@@ -110,11 +110,16 @@ public class VehicleUtils {
                     .collect(Collectors.toList());
             try {
                 Path path = Paths.get(LAST_PROCESSED_FILENAME);
+                if (!Files.exists(path)) {
+                    Files.createFile(path);
+                    logger.info("파일이 존재하지 않아 새 파일을 생성했습니다: {}", LAST_PROCESSED_FILENAME);
+                }
                 Files.write(path, lines);
-                logger.info("Successfully saved last processed times to {}", LAST_PROCESSED_FILENAME);
+                logger.info("각 설치위치의 마지막 차량 통과 시간으로 마지막 조회 한 시간을 파일에 저장 성공 {}", LAST_PROCESSED_FILENAME);
             } catch (IOException e) {
                 logger.error("Failed to save last processed times", e);
             }
         }
+
     }
 }

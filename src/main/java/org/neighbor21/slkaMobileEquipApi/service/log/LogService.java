@@ -52,7 +52,7 @@ public class LogService {
             info.setXAmzCfId(getHeader(response, "X-Amz-Cf-Id", "Unknown CloudFront ID"));
 
             // info 로그 출력
-            logger.info("data type : {}, body length : {}, connection type : {}, The time the response was generated : {}",
+            logger.debug("data type : {}, body length : {}, connection type : {}, The time the response was generated : {}",
                     info.getContentType(), info.getContentLength(), info.getConnection(), info.getDate());
             return info;
         } catch (Exception e) {

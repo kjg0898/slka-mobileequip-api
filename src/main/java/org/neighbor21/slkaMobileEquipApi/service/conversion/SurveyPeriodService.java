@@ -95,12 +95,12 @@ public class SurveyPeriodService {
         long dbStartTime = System.currentTimeMillis();
         try {
             // JDBC를 사용한 배치 삽입
-            batchService.insertBatch(periodEntities);
+            batchService.insertPeriodeBatch(periodEntities);
         } catch (Exception e) {
             logger.error("TL_MVMNEQ_PERIOD 배치 삽입 실패", e);
         }
         long dbEndTime = System.currentTimeMillis();
-        logger.info("TL_MVMNEQ_PERIOD 배치 삽입 작업에 걸린 시간: {} ms", (dbEndTime - dbStartTime));
+        logger.info("TL_MVMNEQ_PERIOD 배치 삽입 작업에 걸린 총 시간: {} ms", (dbEndTime - dbStartTime));
     }
 
     /**

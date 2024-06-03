@@ -6,7 +6,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.SQLInsert;
 import org.neighbor21.slkaMobileEquipApi.entity.compositeKey.TL_MVMNEQ_PASS_IdEntity;
 
 import java.math.BigDecimal;
@@ -26,9 +25,6 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 @Table(name = "TL_MVMNEQ_PASS", schema = "srlk")
-@SQLInsert(sql = "INSERT INTO srlk.tl_mvmneq_pass (vehicle_class, vehicle_headway, vehicle_length, vehicle_speed, instllc_id, pass_lane, pass_dt, vhcl_drct) " +
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?) " +
-        "ON CONFLICT (pass_dt, vhcl_drct, pass_lane, instllc_id) DO NOTHING")
 public class TL_MVMNEQ_PASSEntity {
 
     @EmbeddedId
@@ -37,12 +33,12 @@ public class TL_MVMNEQ_PASSEntity {
     @Column(name = "vehicle_speed", precision = 5, scale = 2)
     private BigDecimal vehicleSpeed;  // 차량 속도
 
-    @Column(name = "vehicle_length", precision = 9, scale = 2)
+    @Column(name = "vehicle_len", precision = 9, scale = 2)
     private BigDecimal vehicleLength;  // 차량 길이
 
-    @Column(name = "vehicle_headway", precision = 5)
-    private int vehicleHeadway;  // 차량 간격 초
+    @Column(name = "vehicle_intv_ss", precision = 5)
+    private int vehicleIntervalSeconds;  // 차량 간격 초
 
-    @Column(name = "vehicle_class", length = 30)
+    @Column(name = "vehicle_clsf", length = 30)
     private String vehicleClass;  // 차량 분류
 }

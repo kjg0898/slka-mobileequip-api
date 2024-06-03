@@ -19,6 +19,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -217,7 +218,7 @@ public class MCATLYSTApiService {
 //                    .body(VehiclesBody)
 //                    .asString();
 
-            String testData = generateIndividualVehiclesTestData(siteId, 1);
+            String testData = generateIndividualVehiclesTestData(siteId, 1000);
 
             HttpResponse<String> response = new HttpResponse<String>() {
                 @Override
@@ -438,19 +439,13 @@ public class MCATLYSTApiService {
      * @param count 생성할 데이터 개수
      * @return JSON 형식의 테스트 데이터 문자열
      */
-    /**
-     * 여러 개의 테스트 Individual Vehicles 데이터를 생성하는 메소드
-     *
-     * @param siteId 생성할 데이터의 siteId
-     * @param count  생성할 데이터 개수
-     * @return JSON 형식의 테스트 데이터 문자열
-     */
     public String generateIndividualVehiclesTestData(int siteId, int count) {
         List<Map<String, Object>> dataList = IntStream.range(0, count).mapToObj(i -> {
             Map<String, Object> data = new HashMap<>();
+            LocalDateTime timestamp = LocalDateTime.now(ZoneId.of("Asia/Colombo")).truncatedTo(ChronoUnit.SECONDS).minusMinutes(count - i); // Ensure unique timestamps
             data.put("site_id", siteId);
-            data.put("timestamp", LocalDateTime.now(ZoneId.of("Asia/Colombo")).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + "Z");
-            data.put("localtime", LocalDateTime.now().minusMinutes(i).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+            data.put("timestamp", timestamp.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + "Z");
+            data.put("localtime", timestamp.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
             data.put("heading", i % 2 == 0 ? "North" : "South");
             data.put("velocity(m/s)", BigDecimal.valueOf(Math.random() * 10));
             data.put("length(m)", BigDecimal.valueOf(Math.random() * 2));

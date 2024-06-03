@@ -3,7 +3,9 @@ package org.neighbor21.slkaMobileEquipApi.service;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.neighbor21.slkaMobileEquipApi.config.Constants;
+import org.neighbor21.slkaMobileEquipApi.entity.TL_MVMNEQ_PASSEntity;
 import org.neighbor21.slkaMobileEquipApi.entity.TL_MVMNEQ_PERIODEntity;
+import org.neighbor21.slkaMobileEquipApi.entity.compositeKey.TL_MVMNEQ_PASS_IdEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,9 +48,9 @@ public class BatchService {
      * 엔티티 리스트를 배치로 삽입하는 메소드.
      * 각 엔티티를 지속하고, 주기적으로 EntityManager를 플러시 및 클리어하여 메모리 사용을 최적화한다.
      *
-     * @param entities 삽입할 엔티티 리스트
+     * @param entities        삽입할 엔티티 리스트
      * @param persistFunction 엔티티 삽입 함수
-     * @param <T> 엔티티 타입
+     * @param <T>             엔티티 타입
      */
     public <T> void batchInsertWithRetry(List<T> entities, Consumer<T> persistFunction) {
         int batchSize = Constants.DEFAULT_BATCH_SIZE; // 배치 크기 설정
@@ -76,12 +78,7 @@ public class BatchService {
                         }
                         entityManager.flush(); // 변경 사항을 데이터베이스에 반영
                         entityManager.clear(); // 영속성 컨텍스트를 비움
-                        // 진행률 계산 및 로그 출력
-                        int progress = (int) (((double) end / totalRecords) * 100);
-                        if (progress >= lastLoggedProgress[0] + 10) {
-                            logger.info("Batch insert progress: {}%", progress);
-                            lastLoggedProgress[0] = progress;
-                        }
+
                     } catch (Exception e) {
                         logger.error("Batch insert attempt failed at index {} to {}: {}", i, end, e.getMessage(), e);
                         handleBatchException(batchList, persistFunction);
@@ -94,9 +91,9 @@ public class BatchService {
     /**
      * 배치 삽입 중 예외가 발생했을 때 예외를 처리하는 메소드.
      *
-     * @param batchList 현재 배치 리스트
+     * @param batchList       현재 배치 리스트
      * @param persistFunction 엔티티 삽입 함수
-     * @param <T> 엔티티 타입
+     * @param <T>             엔티티 타입
      */
     private <T> void handleBatchException(List<T> batchList, Consumer<T> persistFunction) {
         for (T entity : batchList) {
@@ -104,9 +101,6 @@ public class BatchService {
                 persistFunction.accept(entity);
                 entityManager.flush();
             } catch (Exception e) {
-                if (e instanceof BatchUpdateException) {
-                    logBatchUpdateException((BatchUpdateException) e);
-                }
                 logger.error("Failed to insert entity {}: {}", entity, e.getMessage());
             } finally {
                 entityManager.clear(); // 영속성 컨텍스트를 비움
@@ -131,12 +125,12 @@ public class BatchService {
     }
 
     /**
-     * JDBC를 사용하여 배치로 데이터를 삽입하는 메소드.
+     * JDBC를 사용하여 배치로 TL_MVMNEQ_PERIOD 데이터를 삽입하는 메소드.
      *
      * @param periodEntities 삽입할 엔티티 리스트
      * @throws SQLException SQL 예외 발생 시
      */
-    public void insertBatch(List<TL_MVMNEQ_PERIODEntity> periodEntities) throws SQLException {
+    public void insertPeriodeBatch(List<TL_MVMNEQ_PERIODEntity> periodEntities) throws SQLException {
         String sql = "INSERT INTO srlk.tl_mvmneq_period (clct_dt, sqno, instllc_id, start_dt, end_dt) VALUES (?, ?, ?, ?, ?) " +
                 "ON CONFLICT (clct_dt, instllc_id, sqno) DO NOTHING";
 
@@ -161,6 +155,43 @@ public class BatchService {
                 connection.commit(); // 트랜잭션 커밋
             } catch (SQLException e) {
                 connection.rollback(); // 오류가 발생하면 트랜잭션 롤백
+                throw e;
+            }
+        }
+    }
+
+    /**
+     * JDBC를 사용하여 배치로 데이터를 삽입하는 메소드.
+     *
+     * @param passEntities 삽입할 엔티티 리스트
+     * @throws SQLException SQL 예외 발생 시
+     */
+    public void insertPassBatch(List<TL_MVMNEQ_PASSEntity> passEntities) throws SQLException {
+        String sql = "INSERT INTO srlk.tl_mvmneq_pass (pass_dt, vhcl_drct, pass_lane, instllc_id, vhcl_speed, vhcl_len, vhcl_intv_ss, vhcl_clsf) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?) " +
+                "ON CONFLICT (pass_dt, vhcl_drct, pass_lane, instllc_id) DO NOTHING";
+
+        try (Connection connection = dataSource.getConnection()) {
+            connection.setAutoCommit(false);
+
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                for (TL_MVMNEQ_PASSEntity entity : passEntities) {
+                    TL_MVMNEQ_PASS_IdEntity id = entity.getId();
+                    statement.setTimestamp(1, id.getPassTime());
+                    statement.setString(2, id.getVehicleDirection());
+                    statement.setInt(3, id.getPassLane());
+                    statement.setString(4, id.getInstllcId());
+                    statement.setBigDecimal(5, entity.getVehicleSpeed());
+                    statement.setBigDecimal(6, entity.getVehicleLength());
+                    statement.setInt(7, entity.getVehicleIntervalSeconds());
+                    statement.setString(8, entity.getVehicleClass());
+                    statement.addBatch();
+                }
+
+                statement.executeBatch();
+                connection.commit();
+            } catch (SQLException e) {
+                connection.rollback();
                 throw e;
             }
         }

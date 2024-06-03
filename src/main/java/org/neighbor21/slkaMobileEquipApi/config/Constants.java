@@ -12,5 +12,5 @@ package org.neighbor21.slkaMobileEquipApi.config;
  * 24. 5. 10.        kjg08           최초 생성
  */
 public class Constants {
-    public static final int DEFAULT_BATCH_SIZE = 1000; // 기본 배치 크기 상수
+    public static final int DEFAULT_BATCH_SIZE = 10000; // 기본 배치 크기 상수
 }
