@@ -47,7 +47,7 @@ dependencies {
     // Logback
     implementation 'ch.qos.logback:logback-classic:1.4.14'
 
-    // QueryDSL
+    //queryDSL 스프링 부트 3.0 이상
     implementation "com.querydsl:querydsl-jpa:${queryDslVersion}:jakarta"
     annotationProcessor "com.querydsl:querydsl-apt:${queryDslVersion}:jakarta"
     annotationProcessor "jakarta.annotation:jakarta.annotation-api"
