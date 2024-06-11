@@ -1,4 +1,4 @@
-package org.neighbor21.slkaMobileEquipApi.handler;
+package org.neighbor21.slkaMobileEquipApi.hendler;
 
 import jakarta.annotation.PostConstruct;
 import kong.unirest.UnirestException;
