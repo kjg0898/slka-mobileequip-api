@@ -1,4 +1,4 @@
-package org.neighbor21.slkaMobileEquipApi.hendler;
+package org.neighbor21.slkaMobileEquipApi.handler;
 
 import jakarta.annotation.PostConstruct;
 import kong.unirest.UnirestException;
@@ -22,8 +22,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * packageName    : org.neighbor21.slkaMobileEquipApi.hendler
- * fileName       : ScheduledTasksHendler.java
+ * packageName    : org.neighbor21.slkaMobileEquipApi.handler
+ * fileName       : ScheduledTasksHandler.java
  * author         : kjg08
  * date           : 24. 4. 22.
  * description    : API 데이터를 가져오는 예약된 작업을 처리하는 핸들러 클래스
@@ -76,7 +76,7 @@ public class ScheduledTasksHandler {
 
             listSites.forEach(listSite -> mcAtlystApiService.cacheSite(listSite.getSite_id()));
 
-            //저장
+            // 저장
             if (!listSites.isEmpty()) {
                 siteService.saveSiteLogs(listSites);
                 surveyPeriodService.saveSurveyPeriods(listSites);
@@ -87,7 +87,7 @@ public class ScheduledTasksHandler {
             long processEndTime = System.currentTimeMillis();
             long processTime = processEndTime - processStartTime;
             totalListSitesProcessTime = processTime;
-            logger.info("listSites api --> db 적재 까지 전체 실행 시간: {} ms", processTime);
+            logger.info("listSites api --> db 적재까지 전체 실행 시간: {} ms", processTime);
         }
     }
 
@@ -98,31 +98,31 @@ public class ScheduledTasksHandler {
     public void fetchIndividualVehicles() {
         long processStartTime = System.currentTimeMillis();
         List<Integer> processedSiteIds = new ArrayList<>();
-        totalIndividualVehiclesProcessTime = 0; // Initialize totalIndividualVehiclesProcessTime
+        totalIndividualVehiclesProcessTime = 0; // 초기화
 
         if (mcAtlystApiService.isCacheEmpty()) {
             logger.info("Site cache is empty, skipping fetchIndividualVehicles");
             return;
         }
         Set<Integer> siteCache = mcAtlystApiService.getSiteCache();
-        int batchSize = Constants.DEFAULT_BATCH_SIZE; // Define your batch size here
+        int batchSize = Constants.DEFAULT_BATCH_SIZE; // 배치 크기 정의
         List<Integer> siteList = new ArrayList<>(siteCache);
 
         // Site ID 배치 사이즈 별로 모아서 처리
         for (int i = 0; i < siteList.size(); i += batchSize) {
             int end = Math.min(i + batchSize, siteList.size());
-            List<Integer> batchList = siteList.subList(i, end); //배치 개수만큼 리스트에 담음
+            List<Integer> batchList = siteList.subList(i, end); // 배치 개수만큼 리스트에 담음
 
             // 각 배치 리스트의 사이트 ID를 처리
             List<IndividualVehiclesDTO> allVehicles = new ArrayList<>();
             for (Integer siteId : batchList) {
-                allVehicles.addAll(fetchVehiclesForSite(siteId)); //배치 개수만큼 담아서
+                allVehicles.addAll(fetchVehiclesForSite(siteId)); // 배치 개수만큼 담아서
                 processedSiteIds.add(siteId);
             }
 
             // 배치로 차량 데이터를 저장
             if (!allVehicles.isEmpty()) {
-                vehiclePassService.saveVehiclePasses(allVehicles); //한번에 배치 처리로 보냄
+                vehiclePassService.saveVehiclePasses(allVehicles); // 한 번에 배치 처리로 보냄
             }
         }
 
@@ -135,12 +135,12 @@ public class ScheduledTasksHandler {
         logger.info("Processed site IDs: {}", processedSiteIds.stream().map(Object::toString).collect(Collectors.joining(", ")));
     }
 
-    // Update to fetchVehiclesForSite method
+    // 각 사이트에 대해 차량 데이터를 가져오는 메서드
     private List<IndividualVehiclesDTO> fetchVehiclesForSite(Integer siteId) {
         List<IndividualVehiclesDTO> vehicles = new ArrayList<>();
         try {
             long fetchStartTime = System.currentTimeMillis();
-            vehicles = mcAtlystApiService.individualVehicles(siteId); //api 호출
+            vehicles = mcAtlystApiService.individualVehicles(siteId); // API 호출
             long fetchEndTime = System.currentTimeMillis();
 
             totalIndividualVehiclesProcessTime += (fetchEndTime - fetchStartTime);

@@ -83,6 +83,7 @@ public class VehiclePassService {
                 //logger.info("TL_MVMNEQ_PASS 엔티티에 삽입 성공 (장소 ID: {}): {}", siteId, tlMvmneqPassEntity);
             } catch (Exception e) {
                 logger.error("TL_MVMNEQ_PASS 처리 중 오류 발생", e);
+                // 예외 발생 시 추가적인 예외  재시도 로직 등
             }
         });
 
@@ -93,11 +94,12 @@ public class VehiclePassService {
             batchService.insertPassBatch(passEntities);
         } catch (Exception e) {
             logger.error("TL_MVMNEQ_PASS 배치 삽입 실패", e);
+            // 예외 발생 시 추가적인 예외 처리를 수행할 수 있습니다. 예: 알림 발송, 재시도 로직 등
         }
         long dbEndTime = System.currentTimeMillis();
         logger.info("TL_MVMNEQ_PASS 배치 삽입 작업에 걸린 총 시간: {} ms", (dbEndTime - dbStartTime));
 
-        //설치위치별 마지막 통과차량 통과 시간(중복 조회를 피하기 위해 마지막 시간을 저장 한 후 다음번 api 호출 input 값의 시간값을 저장한 값으로 설정한다.)
+        // 설치위치별 마지막 통과차량 통과 시간(중복 조회를 피하기 위해 마지막 시간을 저장 한 후 다음번 api 호출 input 값의 시간값을 저장한 값으로 설정한다.)
         // 업데이트된 최신 통과 시간을 기록
         lastPassTimeMap.forEach(VehicleUtils.LastVehiclePassTimeManager::updateLastVehiclePassTime);
     }

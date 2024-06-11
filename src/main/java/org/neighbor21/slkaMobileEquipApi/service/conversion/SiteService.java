@@ -53,6 +53,7 @@ public class SiteService {
                 logEntities.add(logEntity);
             } catch (Exception e) {
                 logger.error("TL_MVMNEQ_CUR/LOG 처리 중 오류 발생", e);
+                // 예외 발생 시, 추가적인 예외 처리를 수행할 수 있습니다. 예: 알림 발송, 재시도 로직 등
             }
         }
 
@@ -62,26 +63,25 @@ public class SiteService {
             batchService.batchInsertWithRetry(curEntities, entityManager::persist);
             long dbEndTime = System.currentTimeMillis();
             logger.info("TL_MVMNEQ_CUR 배치 삽입 작업에 걸린 총 시간: {} ms", (dbEndTime - dbStartTime));
-            //하이버네이트에는 일시적으로 db 메모리를 1차캐시에 저장하는데, 네이티브 쿼리를 사용하면 그 캐쉬를 지나지 않고 바로 작용하기 때문에 네이티브쿼리
-            //작업이 끝난 후에 플러쉬 클리어를 해주는 것이 좋다. 안그러면 디비 메모리와 캐시의 불일치가 일어날수 있기때문이다.
+            // 하이버네이트의 1차 캐시를 플러쉬하고 클리어하여 DB와의 불일치 방지
             entityManager.flush(); // 변경 사항을 데이터베이스에 반영
             entityManager.clear(); // 영속성 컨텍스트를 비움
-
         } catch (Exception e) {
             logger.error("TL_MVMNEQ_CUR 배치 삽입 실패", e);
+            // 예외 발생 시, 추가적인 예외 처리를 수행할 수 있습니다. 예: 알림 발송, 재시도 로직 등
         }
+
         try {
             long dbStartTime = System.currentTimeMillis();
             batchService.batchInsertWithRetry(logEntities, entityManager::persist);
             long dbEndTime = System.currentTimeMillis();
             logger.info("TL_MVMNEQ_LOG 배치 삽입 작업에 걸린 총 시간: {} ms", (dbEndTime - dbStartTime));
-            //하이버네이트에는 일시적으로 db 메모리를 1차캐시에 저장하는데, 네이티브 쿼리를 사용하면 그 캐쉬를 지나지 않고 바로 작용하기 때문에 네이티브쿼리
-            //작업이 끝난 후에 플러쉬 클리어를 해주는 것이 좋다. 안그러면 디비 메모리와 캐시의 불일치가 일어날수 있기때문이다.
+            // 하이버네이트의 1차 캐시를 플러쉬하고 클리어하여 DB와의 불일치 방지
             entityManager.flush(); // 변경 사항을 데이터베이스에 반영
             entityManager.clear(); // 영속성 컨텍스트를 비움
-
         } catch (Exception e) {
             logger.error("TL_MVMNEQ_LOG 배치 삽입 실패", e);
+            // 예외 발생 시, 추가적인 예외 처리를 수행할 수 있습니다. 예: 알림 발송, 재시도 로직 등
         }
     }
 

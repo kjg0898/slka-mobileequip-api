@@ -60,17 +60,38 @@ public class MCATLYSTApiService {
      * @throws UnirestException API 요청 시 발생하는 예외
      */
     public List<ListSiteDTO> listSites() throws UnirestException {
-//테스트 중
-//******************************************************************************************************************************************************************************************************************************************************************************************************************
-//******************************************************************************************************************************************************************************************************************************************************************************************************************
-//******************************************************************************************************************************************************************************************************************************************************************************************************************
-//******************************************************************************************************************************************************************************************************************************************************************************************************************
+        // 실제 API 호출 부분 (주석 처리)
+//        try {
 //            HttpResponse<String> response = Unirest.post(listsitesApiUrl)
 //                    .header("APIKEY", apiKey)
 //                    .body("")
 //                    .asString();
+//
+//            logger.debug("List Sites 응답 바디: {}", response.getBody());
+//            logger.debug("List Sites 응답 헤더: {}", response.getHeaders());
+//            // 헤더값 로깅
+//            logService.listSiteResponseHeaders(response);
+//            // 응답 데이터 body 반환
+//            if (response.getStatus() == 200) {
+//                List<ListSiteDTO> sitesBody = new ObjectMapper().readValue(response.getBody(), new TypeReference<>() {});
+//                sitesBody.forEach(site -> {
+//                    cacheSite(site.getSite_id());
+//                    logger.info("응답 List Sites 데이터: {}", site);
+//                });
+//                return sitesBody;
+//            } else {
+//                logger.warn("장소 목록을 가져오는데 실패했습니다: HTTP {}", response.getStatus());
+//                return Collections.emptyList();
+//            }
+//        } catch (JsonProcessingException e) {
+//            logger.error("장소 목록 응답 파싱 중 오류 발생", e);
+//            throw new RuntimeException("JSON 파싱 오류", e);
+//        } catch (UnirestException e) {
+//            logger.error("장소 데이터를 가져오는 중 오류 발생", e);
+//            throw e;
+//        }
 
-// 여러 개의 테스트 데이터를 자동으로 생성
+        // 테스트 데이터 생성 부분
         try {
             // 여러 개의 테스트 데이터를 자동으로 생성
             String testData = generateTestData(800); // 원하는 개수만큼 생성
@@ -159,13 +180,6 @@ public class MCATLYSTApiService {
                 }
             };
 
-
-//테스트 중
-//******************************************************************************************************************************************************************************************************************************************************************************************************************
-//******************************************************************************************************************************************************************************************************************************************************************************************************************
-//******************************************************************************************************************************************************************************************************************************************************************************************************************
-//******************************************************************************************************************************************************************************************************************************************************************************************************************
-
             logger.debug("List Sites 응답 바디: {}", response.getBody());
             logger.debug("List Sites 응답 헤더: {}", response.getHeaders());
             // 헤더값 로깅
@@ -176,7 +190,6 @@ public class MCATLYSTApiService {
                 });
                 sitesBody.forEach(site -> {
                     cacheSite(site.getSite_id());
-                    //logger.info("응답 List Sites 데이터: {}", site);
                 });
                 return sitesBody;
             } else {
@@ -186,9 +199,9 @@ public class MCATLYSTApiService {
         } catch (JsonProcessingException e) {
             logger.error("장소 목록 응답 파싱 중 오류 발생", e);
             throw new RuntimeException("JSON 파싱 오류", e);
-        } catch (UnirestException e) {
+        } catch (Exception e) {
             logger.error("장소 데이터를 가져오는 중 오류 발생", e);
-            throw e;
+            throw new RuntimeException("API 호출 중 오류", e);
         }
     }
 
@@ -207,17 +220,38 @@ public class MCATLYSTApiService {
         int limit = 10000;
         String VehiclesBody = buildRequestBody(siteId, startTime, limit);
 
-//테스트 중
-//******************************************************************************************************************************************************************************************************************************************************************************************************************
-//******************************************************************************************************************************************************************************************************************************************************************************************************************
-//******************************************************************************************************************************************************************************************************************************************************************************************************************
-//******************************************************************************************************************************************************************************************************************************************************************************************************************
-        try {
+        // 실제 API 호출 부분 (주석 처리)
+//        try {
 //            HttpResponse<String> response = Unirest.post(individualvehiclesApiUrl)
 //                    .header("APIKEY", apiKey)
 //                    .body(VehiclesBody)
 //                    .asString();
+//
+//            logger.debug("Individual Vehicles 응답 바디: {}", response.getBody());
+//            logger.debug("Individual Vehicles 응답 헤더: {}", response.getHeaders());
+//            // 헤더 로그 로깅
+//            logService.individualVehiclesResponseHeaders(response);
+//            // 응답 데이터 body 반환
+//            if (response.getStatus() == 200) {
+//                List<IndividualVehiclesDTO> vehicles = new ObjectMapper().readValue(response.getBody(), new TypeReference<>() {});
+//                vehicles.forEach(vehicle -> vehicle.setSiteId(siteId));
+//                logger.info("Individual vehicles 데이터: {}", vehicles);
+//
+//                return vehicles;
+//            } else {
+//                logger.warn("개별 차량 데이터를 가져오는데 실패했습니다: HTTP {}", response.getStatus());
+//                return Collections.emptyList();
+//            }
+//        } catch (JsonProcessingException e) {
+//            logger.error("개별 차량 응답 파싱 중 오류 발생", e);
+//            throw new RuntimeException("JSON 파싱 오류", e);
+//        } catch (UnirestException e) {
+//            logger.error("API 요청 실패", e);
+//            throw e;
+//        }
 
+        // 테스트 데이터 생성 부분
+        try {
             String testData = generateIndividualVehiclesTestData(siteId, 1000);
 
             HttpResponse<String> response = new HttpResponse<String>() {
@@ -304,14 +338,6 @@ public class MCATLYSTApiService {
                 }
             };
 
-
-//테스트 중
-//******************************************************************************************************************************************************************************************************************************************************************************************************************
-//******************************************************************************************************************************************************************************************************************************************************************************************************************
-//******************************************************************************************************************************************************************************************************************************************************************************************************************
-//******************************************************************************************************************************************************************************************************************************************************************************************************************
-
-
             logger.debug("Individual Vehicles 응답 바디: {}", response.getBody());
             logger.debug("Individual Vehicles 응답 헤더: {}", response.getHeaders());
             // 헤더 로그 로깅
@@ -321,7 +347,6 @@ public class MCATLYSTApiService {
                 List<IndividualVehiclesDTO> vehicles = new ObjectMapper().readValue(response.getBody(), new TypeReference<>() {
                 });
                 vehicles.forEach(vehicle -> vehicle.setSiteId(siteId));
-                //logger.info("Individual vehicles 데이터: {}", vehicles);
 
                 return vehicles;
             } else {
@@ -331,9 +356,9 @@ public class MCATLYSTApiService {
         } catch (JsonProcessingException e) {
             logger.error("개별 차량 응답 파싱 중 오류 발생", e);
             throw new RuntimeException("JSON 파싱 오류", e);
-        } catch (UnirestException e) {
-            logger.error("API 요청 실패", e);
-            throw e;
+        } catch (Exception e) {
+            logger.error("개별 차량 데이터를 가져오는 중 오류 발생", e);
+            throw new RuntimeException("API 호출 중 오류", e);
         }
     }
 
@@ -432,11 +457,11 @@ public class MCATLYSTApiService {
         return "[" + String.join(",", testDataList) + "]";
     }
 
-
     /**
      * 여러 개의 테스트 Individual Vehicles 데이터를 생성하는 메소드
      *
-     * @param count 생성할 데이터 개수
+     * @param siteId 장소 ID
+     * @param count  생성할 데이터 개수
      * @return JSON 형식의 테스트 데이터 문자열
      */
     public String generateIndividualVehiclesTestData(int siteId, int count) {
@@ -458,7 +483,7 @@ public class MCATLYSTApiService {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             String json = objectMapper.writeValueAsString(dataList);
-            //logger.info("Generated test data: {}", json);
+            logger.debug("Generated test data: {}", json);
             return json;
         } catch (JsonProcessingException e) {
             logger.error("테스트 데이터 생성 중 오류 발생", e);

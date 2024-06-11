@@ -13,7 +13,7 @@ import java.util.List;
  * fileName       : TL_MVMNEQ_PERIODRepository.java
  * author         : kjg08
  * date           : 24. 4. 29.
- * description    :TL_MVMNEQ_PERIOD 테이블에 넣기 위한 리파지토리 인터페이스
+ * description    : TL_MVMNEQ_PERIOD 테이블에 넣기 위한 리포지토리 인터페이스
  * ===========================================================
  * DATE              AUTHOR             NOTE
  * -----------------------------------------------------------
@@ -21,8 +21,13 @@ import java.util.List;
  */
 public interface TL_MVMNEQ_PERIODRepository extends JpaRepository<TL_MVMNEQ_PERIODEntity, TL_MVMNEQ_PERIOD_IdEntity> {
 
-    //해당 instllcId 에 대한 각각 가장 높은 순번값 가져옴
+    /**
+     * 해당 instllcId에 대한 각각 가장 높은 순번값을 가져옴.
+     *
+     * @param instllcIds 설치 ID 목록
+     * @return 설치 ID와 최대 순번 값의 목록
+     */
     @Query(value = "SELECT instllc_id, COALESCE(MAX(sqno), 0) as max_sqno FROM srlk.tl_mvmneq_period WHERE instllc_id IN :instllcIds GROUP BY instllc_id", nativeQuery = true)
     List<Object[]> findMaxSequenceNoByInstllcIds(@Param("instllcIds") List<String> instllcIds);
-
 }
+

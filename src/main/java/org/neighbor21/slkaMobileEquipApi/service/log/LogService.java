@@ -57,6 +57,7 @@ public class LogService {
             return info;
         } catch (Exception e) {
             logger.error("Error processing response headers", e);
+            // 예외 발생 시 추가적인 예외 처리를 수행할 수 있습니다. 예: 알림 발송, 상태 업데이트 등
         }
         return info;
     }

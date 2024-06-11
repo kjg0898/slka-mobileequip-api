@@ -120,6 +120,5 @@ public class VehicleUtils {
                 logger.error("Failed to save last processed times", e);
             }
         }
-
     }
 }

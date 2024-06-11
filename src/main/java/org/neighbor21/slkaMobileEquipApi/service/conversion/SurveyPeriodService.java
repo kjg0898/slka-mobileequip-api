@@ -21,7 +21,16 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * 조사 기간 데이터를 처리하고 저장하는 서비스 클래스.
+ * packageName    : org.neighbor21.slkaMobileEquipApi.service.conversion
+ * fileName       : SurveyPeriodService.java
+ * author         : kjg08
+ * date           : 24. 5. 21.
+ * description    : 조사 기간 데이터를 처리하고 저장하는 서비스 클래스.
+ * 이 클래스는 개별 차량 통과 데이터를 받아와서 데이터베이스에 저장하는 작업을 수행한다.
+ * ===========================================================
+ * DATE              AUTHOR             NOTE
+ * -----------------------------------------------------------
+ * 24. 5. 21.        kjg08           최초 생성
  */
 @Service
 public class SurveyPeriodService {
@@ -86,6 +95,7 @@ public class SurveyPeriodService {
                     periodEntities.add(periodEntity);
                 } catch (DateTimeParseException e) {
                     logger.error("날짜를 파싱하지 못했습니다: 시작 시간 - {}, 종료 시간 - {}", startTimeStr, endTimeStr, e);
+                    // 날짜 파싱 예외 발생 시 예외를 던져 호출자가 처리할 수 있도록 합니다.
                     throw e;
                 }
             }
@@ -98,6 +108,7 @@ public class SurveyPeriodService {
             batchService.insertPeriodeBatch(periodEntities);
         } catch (Exception e) {
             logger.error("TL_MVMNEQ_PERIOD 배치 삽입 실패", e);
+            // 예외 발생 시 추가적인 예외 처리를 수행할 수 있습니다. 예: 알림 발송, 재시도 로직 등
         }
         long dbEndTime = System.currentTimeMillis();
         logger.info("TL_MVMNEQ_PERIOD 배치 삽입 작업에 걸린 총 시간: {} ms", (dbEndTime - dbStartTime));
