@@ -16,4 +16,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
  * 24. 4. 24.        kjg08           최초 생성
  */
 public interface TL_MVMNEQ_LOGRepository extends JpaRepository<TL_MVMNEQ_LOGEntity, TL_MVMNEQ_LOG_IdEntity> {
+
 }

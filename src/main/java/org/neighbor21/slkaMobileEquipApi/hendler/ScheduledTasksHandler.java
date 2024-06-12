@@ -19,6 +19,9 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 /**
@@ -39,18 +42,15 @@ public class ScheduledTasksHandler {
 
     // 마지막 차량 통과 시간 파일 저장 매니저
     private final VehicleUtils.LastVehiclePassTimeManager lastVehiclePassTimeManager = new VehicleUtils.LastVehiclePassTimeManager();
+    private final ExecutorService executorService = Executors.newFixedThreadPool(10);
     private long totalListSitesProcessTime = 0;
     private long totalIndividualVehiclesProcessTime = 0;
-
     @Autowired
     private MCATLYSTApiService mcAtlystApiService;
-
     @Autowired
     private SiteService siteService;
-
     @Autowired
     private VehiclePassService vehiclePassService;
-
     @Autowired
     private SurveyPeriodService surveyPeriodService;
 
@@ -90,6 +90,40 @@ public class ScheduledTasksHandler {
             logger.info("listSites api --> db 적재까지 전체 실행 시간: {} ms", processTime);
         }
     }
+// 병렬 처리를 통해 여러 API 호출을 동시에 수행하도록 Java의 CompletableFuture를 사용하여 비동기 호출 해봤지만 비슷해서 주석처리
+//    @Scheduled(cron = "${scheduler.cron.IndividualVehicles}")
+//    public void fetchIndividualVehicles() {
+//        long processStartTime = System.currentTimeMillis();
+//        List<CompletableFuture<Void>> futures = new ArrayList<>();
+//        totalIndividualVehiclesProcessTime = 0; // 초기화
+//        if (mcAtlystApiService.isCacheEmpty()) {
+//            logger.info("Site cache is empty, skipping fetchIndividualVehicles");
+//            return;
+//        }
+//        Set<Integer> siteCache = mcAtlystApiService.getSiteCache();
+//        int batchSize = Constants.DEFAULT_BATCH_SIZE;
+//        List<Integer> siteList = new ArrayList<>(siteCache);
+//
+//        for (int i = 0; i < siteList.size(); i += batchSize) {
+//            int end = Math.min(i + batchSize, siteList.size());
+//            List<Integer> batchList = siteList.subList(i, end);
+//
+//            futures.add(CompletableFuture.runAsync(() -> {
+//                List<IndividualVehiclesDTO> allVehicles = new ArrayList<>();
+//                for (Integer siteId : batchList) {
+//                    allVehicles.addAll(fetchVehiclesForSite(siteId));
+//                }
+//                if (!allVehicles.isEmpty()) {
+//                    vehiclePassService.saveVehiclePasses(allVehicles);
+//                }
+//            }, executorService));
+//        }
+//
+//        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+//        long processEndTime = System.currentTimeMillis();
+//        logger.info("IndividualVehicles api --> db 적재까지 전체 실행 시간: {} ms", processEndTime - processStartTime);
+//        logger.info("Total IndividualVehicles api 수집 총 시간: {} ms", totalIndividualVehiclesProcessTime);
+//    }
 
     /**
      * 5분 간격으로 Individual Vehicles 개별 차량 호출 후 데이터를 처리한다.
