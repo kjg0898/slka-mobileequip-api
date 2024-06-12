@@ -144,7 +144,3 @@ org.neighbor21.slkaMobileEquipApi
 - `SiteService`는 장소 목록 데이터를 `TL_MVMNEQ_CUREntity`와 `TL_MVMNEQ_LOGEntity`로 변환하여 저장합니다.
 - `VehiclePassService`는 개별 차량 데이터를 `TL_MVMNEQ_PASSEntity`로 변환하여 저장합니다.
 
-## 결론
-SLKA Mobile Equipment API 프로젝트는 이동형 장비의 설치 위치와 통과 차량 데이터를 관리하는 강력한 시스템입니다. 이 프로젝트는 Spring Boot와 다양한 최신 기술을 활용하여 효율적으로 데이터를 수집, 처리, 저장합니다. 이 문서를 통해 프로젝트의 구조와 흐름, 그리고 주요 구성 요소들을 자세히 이해할 수 있으며, 프로젝트를 처음 접하는 사람도 쉽게 학습하고 이해할 수 있도록 작성되었습니다.
-
-이를 통해 사용자와 개발자 모두가 프로젝트를 효율적으로 활용하고, 유지보수할 수 있을 것입니다. 발표 시에도 이 문서를 참고하여 프로젝트의 주요 기능과 기술적인 세부 사항을 효과적으로 전달할 수 있습니다.
