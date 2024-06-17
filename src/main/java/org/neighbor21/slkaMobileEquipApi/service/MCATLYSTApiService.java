@@ -195,10 +195,11 @@ public class MCATLYSTApiService {
             logService.listSiteResponseHeaders(response);
             // 응답 데이터 body 반환
             if (response.getStatus() == 200) {
-                List<ListSiteDTO> sitesBody = new ObjectMapper().readValue(response.getBody(), new TypeReference<>() {});
+                List<ListSiteDTO> sitesBody = new ObjectMapper().readValue(response.getBody(), new TypeReference<>() {
+                });
                 sitesBody.forEach(site -> {
                     cacheSite(site.getSite_id());
-                   // logger.info("응답 List Sites 데이터: {}", site);
+                    // logger.info("응답 List Sites 데이터: {}", site);
                 });
                 return sitesBody;
             } else {
@@ -212,10 +213,10 @@ public class MCATLYSTApiService {
             logger.error("장소 데이터를 가져오는 중 오류 발생", e);
             throw e;
         }
-}
+    }
 
 
-/**
+    /**
      * Individual Vehicles 개별 차량(특정 장소에 대한 개별 차량기록)
      *
      * @param siteId 대상 장소 ID
