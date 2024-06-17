@@ -3,6 +3,7 @@ package org.neighbor21.slkaMobileEquipApi.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.resilience4j.retry.Retry;
 import kong.unirest.*;
 import org.neighbor21.slkaMobileEquipApi.dto.individualVehicles.IndividualVehiclesDTO;
 import org.neighbor21.slkaMobileEquipApi.dto.listSite.ListSiteDTO;
@@ -10,6 +11,7 @@ import org.neighbor21.slkaMobileEquipApi.service.log.LogService;
 import org.neighbor21.slkaMobileEquipApi.service.util.VehicleUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -53,6 +55,9 @@ public class MCATLYSTApiService {
     @Value("${api.key}")
     private String apiKey;
 
+    @Autowired
+    private Retry apiRetry;
+
     /**
      * List Sites 장소목록(모든 장소를 반환)
      *
@@ -60,7 +65,9 @@ public class MCATLYSTApiService {
      * @throws UnirestException API 요청 시 발생하는 예외
      */
     public List<ListSiteDTO> listSites() throws UnirestException {
+
         // 실제 API 호출 부분 (주석 처리)
+        //       return Retry.decorateCheckedSupplier(apiRetry, () -> {
 //        try {
 //            HttpResponse<String> response = Unirest.post(listsitesApiUrl)
 //                    .header("APIKEY", apiKey)
@@ -90,6 +97,8 @@ public class MCATLYSTApiService {
 //            logger.error("장소 데이터를 가져오는 중 오류 발생", e);
 //            throw e;
 //        }
+//   }).apply();
+//    }
 
         // 테스트 데이터 생성 부분
         try {
@@ -186,10 +195,10 @@ public class MCATLYSTApiService {
             logService.listSiteResponseHeaders(response);
             // 응답 데이터 body 반환
             if (response.getStatus() == 200) {
-                List<ListSiteDTO> sitesBody = new ObjectMapper().readValue(response.getBody(), new TypeReference<>() {
-                });
+                List<ListSiteDTO> sitesBody = new ObjectMapper().readValue(response.getBody(), new TypeReference<>() {});
                 sitesBody.forEach(site -> {
                     cacheSite(site.getSite_id());
+                   // logger.info("응답 List Sites 데이터: {}", site);
                 });
                 return sitesBody;
             } else {
@@ -199,13 +208,14 @@ public class MCATLYSTApiService {
         } catch (JsonProcessingException e) {
             logger.error("장소 목록 응답 파싱 중 오류 발생", e);
             throw new RuntimeException("JSON 파싱 오류", e);
-        } catch (Exception e) {
+        } catch (UnirestException e) {
             logger.error("장소 데이터를 가져오는 중 오류 발생", e);
-            throw new RuntimeException("API 호출 중 오류", e);
+            throw e;
         }
-    }
+}
 
-    /**
+
+/**
      * Individual Vehicles 개별 차량(특정 장소에 대한 개별 차량기록)
      *
      * @param siteId 대상 장소 ID
@@ -213,6 +223,7 @@ public class MCATLYSTApiService {
      * @throws UnirestException API 요청 시 발생하는 예외
      */
     public List<IndividualVehiclesDTO> individualVehicles(Integer siteId) throws UnirestException {
+//        return Retry.decorateCheckedSupplier(apiRetry, () -> {
         // 이전 차량 지나간 시간
         Timestamp lastProcessedTime = VehicleUtils.LastVehiclePassTimeManager.getLastVehiclePassTime(siteId);
         String startTime = formatStartTime(lastProcessedTime);
@@ -249,6 +260,8 @@ public class MCATLYSTApiService {
 //            logger.error("API 요청 실패", e);
 //            throw e;
 //        }
+//        }).apply();
+//    }
 
         // 테스트 데이터 생성 부분
         try {
@@ -414,6 +427,7 @@ public class MCATLYSTApiService {
     public Set<Integer> getSiteCache() {
         return Collections.unmodifiableSet(siteCache);
     }
+
 
     /**
      * 여러 개의 테스트 데이터를 생성하는 메소드

@@ -1,5 +1,6 @@
 package org.neighbor21.slkaMobileEquipApi.service.conversion;
 
+import io.github.resilience4j.retry.Retry;
 import org.neighbor21.slkaMobileEquipApi.config.Constants;
 import org.neighbor21.slkaMobileEquipApi.dto.listSite.ListSiteDTO;
 import org.neighbor21.slkaMobileEquipApi.dto.listSite.SurveyPeriodDTO;
@@ -10,9 +11,11 @@ import org.neighbor21.slkaMobileEquipApi.service.BatchService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -42,6 +45,10 @@ public class SurveyPeriodService {
 
     @Autowired
     private BatchService batchService;
+
+    @Autowired
+    @Qualifier("dbRetry")
+    private Retry retry; // Retry 객체 주입
 
     /**
      * 조사 기간 정보를 받아와서 데이터베이스에 저장하는 메소드.
@@ -105,7 +112,13 @@ public class SurveyPeriodService {
         long dbStartTime = System.currentTimeMillis();
         try {
             // JDBC를 사용한 배치 삽입
-            batchService.insertPeriodeBatch(periodEntities);
+            Retry.decorateRunnable(retry, () -> {
+                try {
+                    batchService.insertPeriodeBatch(periodEntities);
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            }).run();
         } catch (Exception e) {
             logger.error("TL_MVMNEQ_PERIOD 배치 삽입 실패", e);
             // 예외 발생 시 추가적인 예외 처리를 수행할 수 있습니다. 예: 알림 발송, 재시도 로직 등

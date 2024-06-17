@@ -1,5 +1,6 @@
 package org.neighbor21.slkaMobileEquipApi.hendler;
 
+import io.github.resilience4j.retry.Retry;
 import jakarta.annotation.PostConstruct;
 import kong.unirest.UnirestException;
 import org.neighbor21.slkaMobileEquipApi.config.Constants;
@@ -13,6 +14,7 @@ import org.neighbor21.slkaMobileEquipApi.service.util.VehicleUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -54,6 +56,10 @@ public class ScheduledTasksHandler {
     @Autowired
     private SurveyPeriodService surveyPeriodService;
 
+    @Autowired
+    @Qualifier("apiRetry")
+    private Retry retry; // Use apiRetry for API calls
+
     /**
      * 초기화 메서드로, 마지막 차량 통과 시간을 로드한다.
      */
@@ -69,20 +75,25 @@ public class ScheduledTasksHandler {
     public void fetchAndCacheListSite() {
         long processStartTime = System.currentTimeMillis();
         try {
-            long fetchStartTime = System.currentTimeMillis();
-            List<ListSiteDTO> listSites = mcAtlystApiService.listSites(); // 수집
-            long fetchEndTime = System.currentTimeMillis();
-            logger.info("listSites API 호출에 걸린 총 시간: {} ms", (fetchEndTime - fetchStartTime));
+            Retry.decorateCheckedSupplier(retry, () -> {
+                long fetchStartTime = System.currentTimeMillis();
+                List<ListSiteDTO> listSites = mcAtlystApiService.listSites(); //수집
+                long fetchEndTime = System.currentTimeMillis();
+                logger.info("listSites API 호출에 걸린 총 시간: {} ms", (fetchEndTime - fetchStartTime));
 
-            listSites.forEach(listSite -> mcAtlystApiService.cacheSite(listSite.getSite_id()));
+                listSites.forEach(listSite -> mcAtlystApiService.cacheSite(listSite.getSite_id()));
 
-            // 저장
-            if (!listSites.isEmpty()) {
-                siteService.saveSiteLogs(listSites);
-                surveyPeriodService.saveSurveyPeriods(listSites);
-            }
-        } catch (UnirestException e) {
+                // 저장
+                if (!listSites.isEmpty()) {
+                    siteService.saveSiteLogs(listSites);
+                    surveyPeriodService.saveSurveyPeriods(listSites);
+                }
+                return null;
+            }).apply();
+        } catch (Exception e) {
             handleApiException("Failed to fetch and cache list sites", e);
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
         } finally {
             long processEndTime = System.currentTimeMillis();
             long processTime = processEndTime - processStartTime;
@@ -90,49 +101,15 @@ public class ScheduledTasksHandler {
             logger.info("listSites api --> db 적재까지 전체 실행 시간: {} ms", processTime);
         }
     }
-// 병렬 처리를 통해 여러 API 호출을 동시에 수행하도록 Java의 CompletableFuture를 사용하여 비동기 호출 해봤지만 비슷해서 주석처리
-//    @Scheduled(cron = "${scheduler.cron.IndividualVehicles}")
-//    public void fetchIndividualVehicles() {
-//        long processStartTime = System.currentTimeMillis();
-//        List<CompletableFuture<Void>> futures = new ArrayList<>();
-//        totalIndividualVehiclesProcessTime = 0; // 초기화
-//        if (mcAtlystApiService.isCacheEmpty()) {
-//            logger.info("Site cache is empty, skipping fetchIndividualVehicles");
-//            return;
-//        }
-//        Set<Integer> siteCache = mcAtlystApiService.getSiteCache();
-//        int batchSize = Constants.DEFAULT_BATCH_SIZE;
-//        List<Integer> siteList = new ArrayList<>(siteCache);
-//
-//        for (int i = 0; i < siteList.size(); i += batchSize) {
-//            int end = Math.min(i + batchSize, siteList.size());
-//            List<Integer> batchList = siteList.subList(i, end);
-//
-//            futures.add(CompletableFuture.runAsync(() -> {
-//                List<IndividualVehiclesDTO> allVehicles = new ArrayList<>();
-//                for (Integer siteId : batchList) {
-//                    allVehicles.addAll(fetchVehiclesForSite(siteId));
-//                }
-//                if (!allVehicles.isEmpty()) {
-//                    vehiclePassService.saveVehiclePasses(allVehicles);
-//                }
-//            }, executorService));
-//        }
-//
-//        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-//        long processEndTime = System.currentTimeMillis();
-//        logger.info("IndividualVehicles api --> db 적재까지 전체 실행 시간: {} ms", processEndTime - processStartTime);
-//        logger.info("Total IndividualVehicles api 수집 총 시간: {} ms", totalIndividualVehiclesProcessTime);
-//    }
 
     /**
-     * 5분 간격으로 Individual Vehicles 개별 차량 호출 후 데이터를 처리한다.
+     * 5분 간격으로 Individual Vehicles 개별 차량 호출 후 데이터를 처리한다. // TL_RIS_ROADWIDTH api 호출
      */
-    @Scheduled(cron = "${scheduler.cron.IndividualVehicles}") // TL_RIS_ROADWIDTH api 호출
-    public void fetchIndividualVehicles() {
+    @Scheduled(cron = "${scheduler.cron.IndividualVehicles}")
+    public void fetchIndividualVehicles() throws Throwable {
         long processStartTime = System.currentTimeMillis();
         List<Integer> processedSiteIds = new ArrayList<>();
-        totalIndividualVehiclesProcessTime = 0; // 초기화
+        totalIndividualVehiclesProcessTime = 0;
 
         if (mcAtlystApiService.isCacheEmpty()) {
             logger.info("Site cache is empty, skipping fetchIndividualVehicles");
@@ -150,13 +127,13 @@ public class ScheduledTasksHandler {
             // 각 배치 리스트의 사이트 ID를 처리
             List<IndividualVehiclesDTO> allVehicles = new ArrayList<>();
             for (Integer siteId : batchList) {
-                allVehicles.addAll(fetchVehiclesForSite(siteId)); // 배치 개수만큼 담아서
+                allVehicles.addAll(Retry.decorateCheckedSupplier(retry, () -> fetchVehiclesForSite(siteId)).apply());
                 processedSiteIds.add(siteId);
             }
 
             // 배치로 차량 데이터를 저장
             if (!allVehicles.isEmpty()) {
-                vehiclePassService.saveVehiclePasses(allVehicles); // 한 번에 배치 처리로 보냄
+                vehiclePassService.saveVehiclePasses(allVehicles);
             }
         }
 
@@ -174,16 +151,16 @@ public class ScheduledTasksHandler {
         List<IndividualVehiclesDTO> vehicles = new ArrayList<>();
         try {
             long fetchStartTime = System.currentTimeMillis();
-            vehicles = mcAtlystApiService.individualVehicles(siteId); // API 호출
+            vehicles = mcAtlystApiService.individualVehicles(siteId);
             long fetchEndTime = System.currentTimeMillis();
 
             totalIndividualVehiclesProcessTime += (fetchEndTime - fetchStartTime);
-
         } catch (UnirestException e) {
             handleApiException(String.format("Failed to fetch individual vehicles for siteId: %s", siteId), e);
         }
         return vehicles;
     }
+
 
     /**
      * API 호출 중 발생한 예외를 처리하는 메서드.

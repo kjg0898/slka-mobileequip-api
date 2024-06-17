@@ -1,5 +1,6 @@
 package org.neighbor21.slkaMobileEquipApi.service.conversion;
 
+import io.github.resilience4j.retry.Retry;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.neighbor21.slkaMobileEquipApi.dto.listSite.ListSiteDTO;
@@ -11,6 +12,7 @@ import org.neighbor21.slkaMobileEquipApi.service.BatchService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +32,10 @@ public class SiteService {
     @Autowired
     private BatchService batchService;
 
+    @Autowired
+    @Qualifier("dbRetry")
+    private Retry retry; // Use dbRetry for database operations Retry 객체 주입
+
     @PersistenceContext
     private EntityManager entityManager;
 
@@ -42,7 +48,6 @@ public class SiteService {
     public void saveSiteLogs(List<ListSiteDTO> locations) {
         List<TL_MVMNEQ_CUREntity> curEntities = new ArrayList<>();
         List<TL_MVMNEQ_LOGEntity> logEntities = new ArrayList<>();
-
         // 각 장소에 대해 처리
         for (ListSiteDTO location : locations) {
             try {
@@ -53,14 +58,13 @@ public class SiteService {
                 logEntities.add(logEntity);
             } catch (Exception e) {
                 logger.error("TL_MVMNEQ_CUR/LOG 처리 중 오류 발생", e);
-                // 예외 발생 시, 추가적인 예외 처리를 수행할 수 있습니다. 예: 알림 발송, 재시도 로직 등
             }
         }
 
         // 엔티티 리스트를 배치로 삽입
         try {
             long dbStartTime = System.currentTimeMillis();
-            batchService.batchInsertWithRetry(curEntities, entityManager::persist);
+            Retry.decorateRunnable(retry, () -> batchService.batchInsertWithRetry(curEntities, entityManager::persist)).run();
             long dbEndTime = System.currentTimeMillis();
             logger.info("TL_MVMNEQ_CUR 배치 삽입 작업에 걸린 총 시간: {} ms", (dbEndTime - dbStartTime));
             // 하이버네이트의 1차 캐시를 플러쉬하고 클리어하여 DB와의 불일치 방지
@@ -73,7 +77,7 @@ public class SiteService {
 
         try {
             long dbStartTime = System.currentTimeMillis();
-            batchService.batchInsertWithRetry(logEntities, entityManager::persist);
+            Retry.decorateRunnable(retry, () -> batchService.batchInsertWithRetry(logEntities, entityManager::persist)).run();
             long dbEndTime = System.currentTimeMillis();
             logger.info("TL_MVMNEQ_LOG 배치 삽입 작업에 걸린 총 시간: {} ms", (dbEndTime - dbStartTime));
             // 하이버네이트의 1차 캐시를 플러쉬하고 클리어하여 DB와의 불일치 방지

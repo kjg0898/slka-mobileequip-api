@@ -1,5 +1,6 @@
 package org.neighbor21.slkaMobileEquipApi.service;
 
+import io.github.resilience4j.retry.Retry;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.neighbor21.slkaMobileEquipApi.config.Constants;
@@ -42,6 +43,10 @@ public class BatchService {
     @PersistenceContext
     private EntityManager entityManager;
 
+    @Autowired
+    private Retry dbRetry;
+
+
     /**
      * BatchService 생성자.
      *
@@ -51,6 +56,7 @@ public class BatchService {
     public BatchService(PlatformTransactionManager transactionManager) {
         this.transactionTemplate = new TransactionTemplate(transactionManager);
     }
+
 
     /**
      * 엔티티 리스트를 배치로 삽입하는 메소드.
@@ -75,16 +81,18 @@ public class BatchService {
 
                 if (!batchList.isEmpty()) {
                     try {
-                        for (T entity : batchList) {
-                            try {
-                                persistFunction.accept(entity); // 엔티티 삽입 함수 호출
-                            } catch (Exception e) {
-                                logger.error("Error persisting entity {}: {}", entity, e.getMessage(), e);
-                                throw e; // 외부 catch에서 처리하도록 다시 던짐
+                        Retry.decorateRunnable(dbRetry, () -> {
+                            for (T entity : batchList) {
+                                try {
+                                    persistFunction.accept(entity); // 엔티티 삽입 함수 호출
+                                } catch (Exception e) {
+                                    logger.error("Error persisting entity {}: {}", entity, e.getMessage(), e);
+                                    throw e; // 외부 catch에서 처리하도록 다시 던짐
+                                }
                             }
-                        }
-                        entityManager.flush(); // 변경 사항을 데이터베이스에 반영
-                        entityManager.clear(); // 영속성 컨텍스트를 비움
+                            entityManager.flush(); // 변경 사항을 데이터베이스에 반영
+                            entityManager.clear(); // 영속성 컨텍스트를 비움
+                        }).run();
                     } catch (Exception e) {
                         logger.error("Batch insert attempt failed at index {} to {}: {}", i, end, e.getMessage(), e);
                         handleBatchException(batchList, persistFunction);
@@ -114,6 +122,7 @@ public class BatchService {
         }
     }
 
+
     /**
      * 배치 업데이트 예외를 로깅하는 메소드.
      *
@@ -130,6 +139,7 @@ public class BatchService {
         }
     }
 
+
     /**
      * JDBC를 사용하여 배치로 TL_MVMNEQ_PERIOD 데이터를 삽입하는 메소드.
      *
@@ -141,7 +151,7 @@ public class BatchService {
                 "ON CONFLICT (clct_dt, instllc_id, sqno) DO NOTHING";
 
         // 데이터베이스에 연결을 설정합니다.
-        try (Connection connection = dataSource.getConnection()) {
+        try (Connection connection = Retry.decorateCheckedSupplier(dbRetry, dataSource::getConnection).apply()) {
             connection.setAutoCommit(false); // 자동 커밋 비활성화
 
             // 배치 실행을 위한 SQL 문을 준비합니다.
@@ -155,7 +165,6 @@ public class BatchService {
                     statement.setTimestamp(5, Timestamp.valueOf(entity.getEndTime()));
                     statement.addBatch(); // 배치에 문을 추가합니다.
                 }
-
                 // 배치 실행
                 statement.executeBatch();
                 connection.commit(); // 트랜잭션 커밋
@@ -167,6 +176,8 @@ public class BatchService {
         } catch (SQLException e) {
             logger.error("Failed to execute period batch insert", e);
             throw e; // 예외를 다시 던져서 호출자에게 알림
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -181,9 +192,8 @@ public class BatchService {
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?) " +
                 "ON CONFLICT (pass_dt, vhcl_drct, pass_lane, instllc_id) DO NOTHING";
 
-        try (Connection connection = dataSource.getConnection()) {
+        try (Connection connection = Retry.decorateCheckedSupplier(dbRetry, dataSource::getConnection).apply()) {
             connection.setAutoCommit(false);
-
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 for (TL_MVMNEQ_PASSEntity entity : passEntities) {
                     TL_MVMNEQ_PASS_IdEntity id = entity.getId();
@@ -197,17 +207,18 @@ public class BatchService {
                     statement.setString(8, entity.getVehicleClass());
                     statement.addBatch();
                 }
-
                 statement.executeBatch();
                 connection.commit();
             } catch (SQLException e) {
                 connection.rollback();
-                logBatchUpdateException((BatchUpdateException) e); // 예외 로깅
+                logBatchUpdateException((BatchUpdateException) e);
                 throw e;
             }
         } catch (SQLException e) {
             logger.error("Failed to execute pass batch insert", e);
-            throw e; // 예외를 다시 던져서 호출자에게 알림
+            throw e;
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
         }
     }
 }

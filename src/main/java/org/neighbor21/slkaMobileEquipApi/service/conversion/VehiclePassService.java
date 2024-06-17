@@ -1,5 +1,6 @@
 package org.neighbor21.slkaMobileEquipApi.service.conversion;
 
+import io.github.resilience4j.retry.Retry;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.neighbor21.slkaMobileEquipApi.dto.individualVehicles.IndividualVehiclesDTO;
@@ -10,9 +11,11 @@ import org.neighbor21.slkaMobileEquipApi.service.util.VehicleUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,6 +48,10 @@ public class VehiclePassService {
 
     @PersistenceContext
     private EntityManager entityManager;
+
+    @Autowired
+    @Qualifier("dbRetry")
+    private Retry retry;  // Retry 객체 주입
 
     /**
      * 개별 차량 통과 정보를 받아와서 데이터베이스에 저장하는 메소드.
@@ -91,10 +98,15 @@ public class VehiclePassService {
         long dbStartTime = System.currentTimeMillis();
         try {
             // JDBC를 사용한 배치 삽입
-            batchService.insertPassBatch(passEntities);
+            Retry.decorateRunnable(retry, () -> {
+                try {
+                    batchService.insertPassBatch(passEntities);
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            }).run();
         } catch (Exception e) {
             logger.error("TL_MVMNEQ_PASS 배치 삽입 실패", e);
-            // 예외 발생 시 추가적인 예외 처리를 수행할 수 있습니다. 예: 알림 발송, 재시도 로직 등
         }
         long dbEndTime = System.currentTimeMillis();
         logger.info("TL_MVMNEQ_PASS 배치 삽입 작업에 걸린 총 시간: {} ms", (dbEndTime - dbStartTime));
