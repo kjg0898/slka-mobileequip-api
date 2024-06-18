@@ -188,8 +188,8 @@ public class BatchService {
      * @throws SQLException SQL 예외 발생 시
      */
     public void insertPassBatch(List<TL_MVMNEQ_PASSEntity> passEntities) throws SQLException {
-        String sql = "INSERT INTO srlk.tl_mvmneq_pass (pass_dt, vhcl_drct, pass_lane, instllc_id, vhcl_speed, vhcl_len, vhcl_intv_ss, vhcl_clsf) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?) " +
+        String sql = "INSERT INTO srlk.tl_mvmneq_pass (pass_dt, vhcl_drct, pass_lane, instllc_id, vhcl_speed, vhcl_len, vhcl_intv_ss, vhcl_clsf, clct_dt) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) " +
                 "ON CONFLICT (pass_dt, vhcl_drct, pass_lane, instllc_id) DO NOTHING";
 
         try (Connection connection = Retry.decorateCheckedSupplier(dbRetry, dataSource::getConnection).apply()) {
@@ -205,6 +205,7 @@ public class BatchService {
                     statement.setBigDecimal(6, entity.getVehicleLength());
                     statement.setInt(7, entity.getVehicleIntervalSeconds());
                     statement.setString(8, entity.getVehicleClass());
+                    statement.setTimestamp(9, entity.getCollectionDatetime());
                     statement.addBatch();
                 }
                 statement.executeBatch();

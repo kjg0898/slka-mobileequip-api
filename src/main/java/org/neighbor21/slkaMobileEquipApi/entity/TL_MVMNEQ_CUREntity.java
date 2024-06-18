@@ -10,6 +10,7 @@ import org.hibernate.annotations.SQLInsert;
 import org.neighbor21.slkaMobileEquipApi.entity.compositeKey.TL_MVMNEQ_CUR_IdEntity;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 
 /**
  * packageName    : org.neighbor21.slkaMobileEquipApi.entity
@@ -26,8 +27,8 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 @Table(name = "TL_MVMNEQ_CUR", schema = "srlk")
-@SQLInsert(sql = "INSERT INTO srlk.tl_mvmneq_cur (eqpmnt_id, instllc_descr, instllc_nm, latitude, longitude, instllc_id) VALUES (?, ?, ?, ?, ?, ?) " +
-        "ON CONFLICT (instllc_id) DO UPDATE SET eqpmnt_id = EXCLUDED.eqpmnt_id, instllc_descr = EXCLUDED.instllc_descr, instllc_nm = EXCLUDED.instllc_nm, latitude = EXCLUDED.latitude, longitude = EXCLUDED.longitude")
+@SQLInsert(sql = "INSERT INTO srlk.tl_mvmneq_cur (eqpmnt_id, instllc_descr, instllc_nm, lat, lon, clct_dt, instllc_id) VALUES (?, ?, ?, ?, ?, ?, ?) " +
+        "ON CONFLICT (instllc_id) DO UPDATE SET eqpmnt_id = EXCLUDED.eqpmnt_id, instllc_descr = EXCLUDED.instllc_descr, instllc_nm = EXCLUDED.instllc_nm, lat = EXCLUDED.lat, lon = EXCLUDED.lon, clct_dt = EXCLUDED.clct_dt")
 public class TL_MVMNEQ_CUREntity {
 
     @EmbeddedId
@@ -42,10 +43,13 @@ public class TL_MVMNEQ_CUREntity {
     @Column(name = "EQPMNT_ID", length = 50)
     private String eqpmntId;  // 장비 아이디
 
-    @Column(name = "latitude", precision = 14, scale = 8)
+    @Column(name = "LAT", precision = 14, scale = 8)
     private BigDecimal latitude;  // 위도
 
-    @Column(name = "longitude", precision = 14, scale = 8)
+    @Column(name = "LON", precision = 14, scale = 8)
     private BigDecimal longitude;  // 경도
+
+    @Column(name = "CLCT_DT")
+    private Timestamp CollectionDatetime; //수집일시(추가중)
 
 }

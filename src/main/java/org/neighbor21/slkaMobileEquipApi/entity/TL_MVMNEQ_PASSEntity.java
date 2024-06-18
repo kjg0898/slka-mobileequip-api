@@ -9,6 +9,7 @@ import lombok.Setter;
 import org.neighbor21.slkaMobileEquipApi.entity.compositeKey.TL_MVMNEQ_PASS_IdEntity;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 
 /**
  * packageName    : org.neighbor21.slkaMobileEquipApi.entity
@@ -41,4 +42,7 @@ public class TL_MVMNEQ_PASSEntity {
 
     @Column(name = "vehicle_clsf", length = 30)
     private String vehicleClass;  // 차량 분류
+
+    @Column(name = "CLCT_DT")
+    private Timestamp collectionDatetime; //수집일시(추가중)
 }

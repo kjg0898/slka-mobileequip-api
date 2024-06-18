@@ -39,10 +39,10 @@ public class TL_MVMNEQ_LOGEntity {
     @Column(name = "EQPMNT_ID", length = 50)
     private String eqpmntId;  // 장비 아이디
 
-    @Column(name = "latitude", precision = 14, scale = 8)
+    @Column(name = "LAT", precision = 14, scale = 8)
     private BigDecimal latitude;  // 위도
 
-    @Column(name = "longitude", precision = 14, scale = 8)
+    @Column(name = "LON", precision = 14, scale = 8)
     private BigDecimal longitude;  // 경도
 
 

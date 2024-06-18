@@ -105,6 +105,7 @@ public class SiteService {
         tlMvmneqCurEntity.setLatitude(BigDecimal.valueOf(location.getLatitude()));
         tlMvmneqCurEntity.setLongitude(BigDecimal.valueOf(location.getLongitude()));
         tlMvmneqCurEntity.setEqpmntId(location.getAsset_management_id());
+        tlMvmneqCurEntity.setCollectionDatetime(new Timestamp(System.currentTimeMillis()));
 
         return tlMvmneqCurEntity;
     }
