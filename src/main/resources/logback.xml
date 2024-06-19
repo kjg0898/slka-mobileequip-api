@@ -1,15 +1,40 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
 
+    <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss} %-5level [%thread] %logger{36}.%M:%L - %msg%n" />
+    <property name="LOG_DIR" value="/was/mobileEquip" />
+    <property name="MAX_FILE_SIZE" value="500MB" />
+
     <!-- 콘솔에 출력되는 로그의 형식을 정의하는 패턴 -->
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level [%thread] %logger{36}.%M:%L - %msg%n</pattern>
+            <pattern>${LOG_PATTERN}</pattern>
         </encoder>
     </appender>
+
+    <!-- 파일에 출력되는 로그의 형식을 정의하는 패턴 및 파일 경로 설정 -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/application.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- 파일 크기와 날짜 기준으로 로그 파일을 롤링 -->
+            <fileNamePattern>${LOG_DIR}/application.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <!-- 최대 파일 크기 설정 -->
+            <maxFileSize>${MAX_FILE_SIZE}</maxFileSize>
+            <!-- 최대 보관할 로그 파일 수 -->
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="org.hibernate.SQL" level="warn"/>
+    <logger name="org.springframework" level="info"/>
 
     <!-- 어플리케이션의 기본 로그 레벨과 appender 설정 -->
     <root level="info">
         <appender-ref ref="STDOUT"/>
+        <!-- 파일 로깅은 환경 변수에 따라 활성화 -->
+        <appender-ref ref="FILE" condition="on ${LOG_TO_FILE:true}"/>
     </root>
 </configuration>
