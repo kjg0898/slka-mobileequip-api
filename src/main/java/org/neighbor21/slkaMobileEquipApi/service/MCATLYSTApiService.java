@@ -438,7 +438,7 @@ public class MCATLYSTApiService {
      */
     private static final Random random = new Random();
 
-    private String generateTestData(int count) {
+    private static String generateTestData(int count) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
 
         List<String> testDataList = IntStream.range(0, count).mapToObj(i -> {
@@ -447,8 +447,8 @@ public class MCATLYSTApiService {
             Integer siteId = i;
             String siteName = "SITE NAME " + min;
             String description = "EXAMPLE ROAD " + min;
-            double latitude = -1.032914;
-            double longitude = 1.032914;
+            double latitude = -1.032914 + (random.nextDouble() * 0.01); // Slightly different latitude
+            double longitude = 1.032914 + (random.nextDouble() * 0.01); // Slightly different longitude
             int assetManagementId = random.nextInt(36) + 1; // 1부터 36까지 랜덤 값 생성
 
             // Generate exactly 100 survey periods with random times for the same site_id

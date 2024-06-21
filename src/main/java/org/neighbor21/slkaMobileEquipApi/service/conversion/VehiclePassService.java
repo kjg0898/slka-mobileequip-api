@@ -61,7 +61,6 @@ public class VehiclePassService {
     @Transactional
     public void saveVehiclePasses(List<IndividualVehiclesDTO> vehicles) {
         List<TL_MVMNEQ_PASSEntity> passEntities = new ArrayList<>();
-
         vehicles.forEach(vehicle -> {
             try {
                 Integer siteId = vehicle.getSiteId();
@@ -82,7 +81,7 @@ public class VehiclePassService {
                 tlMvmneqPassEntity.setVehicleLength(vehicle.getLength());
                 tlMvmneqPassEntity.setVehicleIntervalSeconds(VehicleUtils.calculateIntervarSeconds(currentTimestamp, lastPassTime));
                 tlMvmneqPassEntity.setVehicleClass(vehicle.getVehicleClass());
-
+                tlMvmneqPassEntity.setCollectionDatetime(new Timestamp(System.currentTimeMillis()));
                 // 현재 통과 시간을 마지막 통과 시간으로 업데이트
                 lastPassTimeMap.put(siteId, currentTimestamp);
 
