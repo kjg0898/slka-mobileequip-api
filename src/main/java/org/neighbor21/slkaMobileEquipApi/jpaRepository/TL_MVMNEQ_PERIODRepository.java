@@ -13,7 +13,7 @@ import java.util.List;
  * fileName       : TL_MVMNEQ_PERIODRepository.java
  * author         : kjg08
  * date           : 24. 4. 29.
- * description    : TL_MVMNEQ_PERIOD 테이블에 넣기 위한 리포지토리 인터페이스
+ * description    : TL_MVMNEQ_PERIOD 테이블에 넣기 위한 리포지토리 인터페이스 네이티브쿼리
  * ===========================================================
  * DATE              AUTHOR             NOTE
  * -----------------------------------------------------------

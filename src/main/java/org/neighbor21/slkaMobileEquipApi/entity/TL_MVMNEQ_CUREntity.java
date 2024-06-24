@@ -17,7 +17,7 @@ import java.sql.Timestamp;
  * fileName       : TL_MVMNEQ_CUR.java
  * author         : kjg08
  * date           : 24. 4. 18.
- * description    : 이동형장비 설치위치 관리 (얘는 최신 위치만 관리 하므로 업데이트) TL_MVMNEQ_CUR 테이블에 넣기 전 엔티티
+ * description    : 이동형장비 설치위치 관리 (얘는 최신 위치만 관리 하므로 업데이트) TL_MVMNEQ_CUR 테이블에 넣기 전 엔티티 하이버네티스
  * ===========================================================
  * DATE              AUTHOR             NOTE
  * -----------------------------------------------------------

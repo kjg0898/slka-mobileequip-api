@@ -58,14 +58,14 @@ org.neighbor21.slkaMobileEquipApi
 
 ### 주요 기술
 - **Spring Boot**: 애플리케이션 구성을 간단하게 하고, 필요한 종속성을 자동으로 관리합니다.
-- **Spring Data JPA**: 데이터베이스와의 상호작용을 단순화합니다.
+- **Spring Data JPA**:  기반 데이터 접근 추상화 프레임워크로 JPA를 지원. 다양한 데이터 소스에 대한 접근을 간소화
 - **Hibernate**: ORM 프레임워크로, 객체 지향 프로그래밍과 관계형 데이터베이스 간의 맵핑을 처리합니다.
+- **NativeSQL**  JPA에서 JPQL 대신 직접 SQL을 사용하는 방법
 - **Unirest**: HTTP 요청을 간단하게 보낼 수 있게 해주는 라이브러리입니다.
 - **Lombok**: 반복적인 코드를 줄이기 위해 사용됩니다.
 - **Jackson**: JSON 데이터를 Java 객체로 변환하고, 그 반대로 변환하는 데 사용됩니다.
 - **PostgreSQL**: 데이터베이스 관리 시스템으로 사용됩니다.
 - **Logback**: 로깅 프레임워크입니다.
-- **QueryDSL**: 타입 안전한 쿼리를 작성하기 위해 사용됩니다.
 - **Resilience4j**: 회복 탄력성 패턴을 제공하는 라이브러리로, 재시도 로직을 구현하는 데 사용됩니다.
 
 ### 외부 라이브러리
@@ -73,7 +73,7 @@ org.neighbor21.slkaMobileEquipApi
 - **Unirest**: HTTP 클라이언트 라이브러리입니다.
 - **Jackson Databind**: JSON 데이터를 Java 객체로 변환하고, 그 반대로 변환합니다.
 - **Logback Classic**: 로깅을 위한 라이브러리입니다.
-- **QueryDSL JPA**: 타입 안전한 쿼리를 작성하기 위해 사용되는 라이브러리입니다.
+- **QueryDSL JPA**: QueryDSL, JOOQ: 비표준 오픈소스 프레임워크로, 각각 JPQL 및 SQL 빌더로 사용됨. 여기서는 jqpl
 - **PostgreSQL**: PostgreSQL 데이터베이스와의 상호작용을 위해 사용됩니다.
 - **Resilience4j Core**: 회복 탄력성 패턴을 제공하는 라이브러리입니다.
 

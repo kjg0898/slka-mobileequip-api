@@ -59,7 +59,7 @@ public class BatchService {
 
 
     /**
-     * 엔티티 리스트를 배치로 삽입하는 메소드.
+     * 엔티티 리스트를 배치로 삽입하는 메소드. jpa 사용
      * 각 엔티티를 지속하고, 주기적으로 EntityManager를 플러시 및 클리어하여 메모리 사용을 최적화한다.
      *
      * @param entities        삽입할 엔티티 리스트
