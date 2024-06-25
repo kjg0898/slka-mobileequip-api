@@ -86,7 +86,6 @@ public class SiteService {
             entityManager.clear(); // 영속성 컨텍스트를 비움
         } catch (Exception e) {
             logger.error("TL_MVMNEQ_LOG 배치 삽입 실패", e);
-            // 예외 발생 시, 추가적인 예외 처리를 수행할 수 있습니다. 예: 알림 발송, 재시도 로직 등
         }
         return curEntities.size() + logEntities.size();
     }
