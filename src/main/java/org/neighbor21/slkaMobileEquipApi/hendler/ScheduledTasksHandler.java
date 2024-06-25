@@ -81,7 +81,7 @@ public class ScheduledTasksHandler {
 
         long processStartTime = System.currentTimeMillis();
         try {
-            int totalProcessedItems = Retry.decorateCheckedSupplier(retry, () -> {
+            int totalProcessedItems = Retry.decorateCheckedSupplier(retry, () -> { //실패했을시에 재 시작 하는 resilience4j 의 함수 적용
                 long fetchStartTime = System.currentTimeMillis();
                 List<ListSiteDTO> listSites = mcAtlystApiService.listSites(); //수집
                 long fetchEndTime = System.currentTimeMillis();
