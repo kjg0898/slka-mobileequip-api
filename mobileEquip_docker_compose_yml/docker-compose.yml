@@ -1,0 +1,19 @@
+
+
+services:
+  app:
+    image: 211.189.132.16:5000/srlk/neighbor/srlk-mobileequip-api:0.1
+    container_name: srlk-mobileequip-api
+    restart: always
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    ports:
+      - "18093:18093"
+    volumes:
+      - /data/srlk_logs/srlk-mobileEquip-api-logs/:/was/mobileEquip
+    logging:
+      driver: json-file
+      options:
+        max-size: "500m"
+        max-file: "30"
+
