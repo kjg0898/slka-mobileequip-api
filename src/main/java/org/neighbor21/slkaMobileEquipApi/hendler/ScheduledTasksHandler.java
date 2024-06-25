@@ -43,9 +43,13 @@ public class ScheduledTasksHandler {
 
     // 마지막 차량 통과 시간 파일 저장 매니저
     private final VehicleUtils.LastVehiclePassTimeManager lastVehiclePassTimeManager = new VehicleUtils.LastVehiclePassTimeManager();
+
     private final ExecutorService executorService = Executors.newFixedThreadPool(10);
     private long totalListSitesProcessTime = 0;
+    private int totalListSitesProcessed = 0;
     private long totalIndividualVehiclesProcessTime = 0;
+    private int totalIndividualVehiclesProcessed = 0;
+
     @Autowired
     private MCATLYSTApiService mcAtlystApiService;
     @Autowired
@@ -72,23 +76,29 @@ public class ScheduledTasksHandler {
      */
     @Scheduled(cron = "${scheduler.cron.listSites}") // TL_RIS_ROADWIDTH api 호출
     public void fetchAndCacheListSite() {
+        totalListSitesProcessTime = 0; // Resetting the counters
+        totalListSitesProcessed = 0;
+
         long processStartTime = System.currentTimeMillis();
         try {
-            Retry.decorateCheckedSupplier(retry, () -> {
+            int totalProcessedItems = Retry.decorateCheckedSupplier(retry, () -> {
                 long fetchStartTime = System.currentTimeMillis();
                 List<ListSiteDTO> listSites = mcAtlystApiService.listSites(); //수집
                 long fetchEndTime = System.currentTimeMillis();
-                logger.info("listSites API 호출에 걸린 총 시간: {} ms", (fetchEndTime - fetchStartTime));
+                logger.info("--------------------------------------------------------------------------------------------");
+                logger.info("Total time spent calling the listSites API: {} ms, number of items called: {}", (fetchEndTime - fetchStartTime), listSites.size());
 
                 listSites.forEach(listSite -> mcAtlystApiService.cacheSite(listSite.getSite_id()));
 
-                // 저장
+                int processedItems = 0;
                 if (!listSites.isEmpty()) {
-                    siteService.saveSiteLogs(listSites);
-                    surveyPeriodService.saveSurveyPeriods(listSites);
+                    processedItems += siteService.saveSiteLogs(listSites);
+                    processedItems += surveyPeriodService.saveSurveyPeriods(listSites);
                 }
-                return null;
+                return processedItems;
             }).apply();
+
+            totalListSitesProcessed += totalProcessedItems;
         } catch (Exception e) {
             handleApiException("Failed to fetch and cache list sites", e);
         } catch (Throwable e) {
@@ -97,7 +107,8 @@ public class ScheduledTasksHandler {
             long processEndTime = System.currentTimeMillis();
             long processTime = processEndTime - processStartTime;
             totalListSitesProcessTime = processTime;
-            logger.info("listSites api --> db 적재까지 전체 실행 시간: {} ms", processTime);
+            logger.info("listSites api --> Overall success to DB load, execution time: {} ms, number of items processed: {}", processTime, totalListSitesProcessed);
+            logger.info("--------------------------------------------------------------------------------------------");
         }
     }
 
@@ -106,9 +117,11 @@ public class ScheduledTasksHandler {
      */
     @Scheduled(cron = "${scheduler.cron.IndividualVehicles}")
     public void fetchIndividualVehicles() throws Throwable {
+        totalIndividualVehiclesProcessTime = 0; // Resetting the counters
+        totalIndividualVehiclesProcessed = 0;
+
         long processStartTime = System.currentTimeMillis();
         List<Integer> processedSiteIds = new ArrayList<>();
-        totalIndividualVehiclesProcessTime = 0;
 
         if (mcAtlystApiService.isCacheEmpty()) {
             logger.info("Site cache is empty, skipping fetchIndividualVehicles");
@@ -121,14 +134,18 @@ public class ScheduledTasksHandler {
         // Site ID 배치 사이즈 별로 모아서 처리
         for (int i = 0; i < siteList.size(); i += batchSize) {
             int end = Math.min(i + batchSize, siteList.size());
-            List<Integer> batchList = siteList.subList(i, end); // 배치 개수만큼 리스트에 담음
+            List<Integer> batchList = siteList.subList(i, end);// 배치 개수만큼 리스트에 담음
 
             // 각 배치 리스트의 사이트 ID를 처리
             List<IndividualVehiclesDTO> allVehicles = new ArrayList<>();
             for (Integer siteId : batchList) {
-                allVehicles.addAll(Retry.decorateCheckedSupplier(retry, () -> fetchVehiclesForSite(siteId)).apply());
+                List<IndividualVehiclesDTO> vehicles = Retry.decorateCheckedSupplier(retry, () -> fetchVehiclesForSite(siteId)).apply();
+                allVehicles.addAll(vehicles);
+                totalIndividualVehiclesProcessed += vehicles.size();
                 processedSiteIds.add(siteId);
             }
+            logger.info("--------------------------------------------------------------------------------------------");
+            logger.info("Total time spent calling the IndividualVehicles api: {} ms", totalIndividualVehiclesProcessTime);
 
             // 배치로 차량 데이터를 저장
             if (!allVehicles.isEmpty()) {
@@ -140,10 +157,13 @@ public class ScheduledTasksHandler {
         VehicleUtils.LastVehiclePassTimeManager.saveLastVehiclePassTimes();
         long processEndTime = System.currentTimeMillis();
 
-        logger.info("IndividualVehicles api --> db 적재까지 전체 실행 시간: {} ms", processEndTime - processStartTime);
-        logger.info("Total IndividualVehicles api 수집 총 시간: {} ms", totalIndividualVehiclesProcessTime);
+        logger.info("IndividualVehicles api --> Overall success to DB load, execution time: {} ms, number of items processed: {}", processEndTime - processStartTime, totalIndividualVehiclesProcessed);
+        logger.info("--------------------------------------------------------------------------------------------");
+        logger.info("--------------------------------------------------------------------------------------------");
         logger.info("Processed site IDs: {}", processedSiteIds.stream().map(Object::toString).collect(Collectors.joining(", ")));
+        logger.info("--------------------------------------------------------------------------------------------");
     }
+
 
     // 각 사이트에 대해 차량 데이터를 가져오는 메서드
     private List<IndividualVehiclesDTO> fetchVehiclesForSite(Integer siteId) {
@@ -152,7 +172,6 @@ public class ScheduledTasksHandler {
             long fetchStartTime = System.currentTimeMillis();
             vehicles = mcAtlystApiService.individualVehicles(siteId);
             long fetchEndTime = System.currentTimeMillis();
-
             totalIndividualVehiclesProcessTime += (fetchEndTime - fetchStartTime);
         } catch (UnirestException e) {
             handleApiException(String.format("Failed to fetch individual vehicles for siteId: %s", siteId), e);

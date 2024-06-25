@@ -43,9 +43,10 @@ public class SiteService {
      * 장소 목록을 받아와서 현재 설치 위치와 설치 이력을 관리하는 메소드.
      *
      * @param locations List<ListSiteDTO> 장소 목록
+     * @return int 처리된 항목 수
      */
     @Transactional
-    public void saveSiteLogs(List<ListSiteDTO> locations) {
+    public int saveSiteLogs(List<ListSiteDTO> locations) {
         List<TL_MVMNEQ_CUREntity> curEntities = new ArrayList<>();
         List<TL_MVMNEQ_LOGEntity> logEntities = new ArrayList<>();
         // 각 장소에 대해 처리
@@ -66,7 +67,7 @@ public class SiteService {
             long dbStartTime = System.currentTimeMillis();
             Retry.decorateRunnable(retry, () -> batchService.batchInsertWithRetry(curEntities, entityManager::persist)).run();
             long dbEndTime = System.currentTimeMillis();
-            logger.info("TL_MVMNEQ_CUR 배치 삽입 작업에 걸린 총 시간: {} ms", (dbEndTime - dbStartTime));
+            logger.info("TL_MVMNEQ_CUR Batch insertion successful, total time taken: {} ms, number of items inserted: {}", (dbEndTime - dbStartTime), curEntities.size());
             // 하이버네이트의 1차 캐시를 플러쉬하고 클리어하여 DB와의 불일치 방지
             entityManager.flush(); // 변경 사항을 데이터베이스에 반영
             entityManager.clear(); // 영속성 컨텍스트를 비움
@@ -79,7 +80,7 @@ public class SiteService {
             long dbStartTime = System.currentTimeMillis();
             Retry.decorateRunnable(retry, () -> batchService.batchInsertWithRetry(logEntities, entityManager::persist)).run();
             long dbEndTime = System.currentTimeMillis();
-            logger.info("TL_MVMNEQ_LOG 배치 삽입 작업에 걸린 총 시간: {} ms", (dbEndTime - dbStartTime));
+            logger.info("TL_MVMNEQ_LOG Batch insertion successful, total time taken: {} ms, number of items inserted: {}", (dbEndTime - dbStartTime), logEntities.size());
             // 하이버네이트의 1차 캐시를 플러쉬하고 클리어하여 DB와의 불일치 방지
             entityManager.flush(); // 변경 사항을 데이터베이스에 반영
             entityManager.clear(); // 영속성 컨텍스트를 비움
@@ -87,6 +88,7 @@ public class SiteService {
             logger.error("TL_MVMNEQ_LOG 배치 삽입 실패", e);
             // 예외 발생 시, 추가적인 예외 처리를 수행할 수 있습니다. 예: 알림 발송, 재시도 로직 등
         }
+        return curEntities.size() + logEntities.size();
     }
 
     /**

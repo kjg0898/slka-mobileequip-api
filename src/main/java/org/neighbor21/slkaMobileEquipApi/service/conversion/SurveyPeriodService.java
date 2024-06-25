@@ -54,9 +54,10 @@ public class SurveyPeriodService {
      * 조사 기간 정보를 받아와서 데이터베이스에 저장하는 메소드.
      *
      * @param periods List<ListSiteDTO> 조사 기간 정보 리스트
+     * @return int 처리된 항목 수
      */
     @Transactional
-    public void saveSurveyPeriods(List<ListSiteDTO> periods) {
+    public int saveSurveyPeriods(List<ListSiteDTO> periods) {
         List<TL_MVMNEQ_PERIODEntity> periodEntities = new ArrayList<>();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -124,7 +125,8 @@ public class SurveyPeriodService {
             // 예외 발생 시 추가적인 예외 처리를 수행할 수 있습니다. 예: 알림 발송, 재시도 로직 등
         }
         long dbEndTime = System.currentTimeMillis();
-        logger.info("TL_MVMNEQ_PERIOD 배치 삽입 작업에 걸린 총 시간: {} ms", (dbEndTime - dbStartTime));
+        logger.info("TL_MVMNEQ_PERIOD Batch insertion successful, total time taken: {} ms, number of items inserted: {}", (dbEndTime - dbStartTime), periodEntities.size());
+        return periodEntities.size();
     }
 
     /**
