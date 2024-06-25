@@ -54,7 +54,12 @@ org.neighbor21.slkaMobileEquipApi
 │ └── VehicleUtils.java
 └── SlkaMobileEquipApiApplication.java
 
+## 시퀀스 다이어그램
+![diagram.png](diagram.png)
+
+
 ## 사용 기술 및 라이브러리
+
 
 ### 주요 기술
 - **Spring Boot**: 애플리케이션 구성을 간단하게 하고, 필요한 종속성을 자동으로 관리합니다.
