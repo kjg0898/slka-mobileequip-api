@@ -6,7 +6,7 @@ services:
     container_name: srlk-mobileequip-api
     restart: always
     environment:
-      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_PROFILES_ACTIVE=real
     ports:
       - "18093:18093"
     volumes:
