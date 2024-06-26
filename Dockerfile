@@ -2,7 +2,7 @@
 FROM openjdk:17-jdk
 
 # Set environment variables
-ENV TZ=Asia/Seoul
+ENV TZ=Asia/Colombo
 ENV APP_HOME=/usr/app/
 
 # Create application directory
