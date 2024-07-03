@@ -2,7 +2,7 @@
 
 services:
   app:
-    image: 211.189.132.16:5000/srlk/neighbor/srlk-mobileequip-api:0.1
+    image: 211.189.132.16:5000/srlk/neighbor/srlk-mobileequip-api:0.2
     container_name: srlk-mobileequip-api
     restart: always
     environment:
