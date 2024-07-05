@@ -8,7 +8,7 @@ SET DOCKER_REGISTRY=124.43.79.169:5000
 
 REM 경로 설정
 SET PROJECT_PATH=%~dp0
-SET DOCKER_IMAGE=%DOCKER_REGISTRY%/srlk/neighbor/srlk-mobileequip-api:0.2
+SET DOCKER_IMAGE=%DOCKER_REGISTRY%/srlk/neighbor/srlk-mobileequip-api:0.1
 
 REM Docker 데몬 실행 확인
 echo Checking Docker daemon...
