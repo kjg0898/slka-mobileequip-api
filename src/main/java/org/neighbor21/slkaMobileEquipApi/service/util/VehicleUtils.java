@@ -2,11 +2,18 @@ package org.neighbor21.slkaMobileEquipApi.service.util;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+import javax.sql.DataSource;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.List;
@@ -49,10 +56,14 @@ public class VehicleUtils {
      * 그리고 이미 지나간 차량과 현재 통과하는 차량의 시간 차이(초) 값을 구하기 위해,
      * 서버가 재시작한 경우에도 이어지기 위해서 마지막 시간을 파일에 저장하고, 필요할 때 불러오는 유틸리티 클래스
      */
+    @Component
     public static class LastVehiclePassTimeManager {
         private static final Logger logger = LoggerFactory.getLogger(LastVehiclePassTimeManager.class);
         private static final String LAST_PROCESSED_FILENAME = "last_vehicle_pass_time.txt";
         private static final Map<Integer, Timestamp> lastVehiclePassTimeMap = new HashMap<>();
+
+        @Autowired
+        private DataSource dataSource;
 
         /**
          * siteId에 대한 마지막 차량 통과 시간을 반환합니다.
@@ -86,18 +97,45 @@ public class VehicleUtils {
             try {
                 if (!Files.exists(path)) {
                     logger.info("No existing file found. A new file will be created.");
-                    saveLastVehiclePassTimes();  // 파일이 존재하지 않으면 파일을 생성합니다.
+                    loadLastVehiclePassTimesFromDB();  // 파일이 존재하지 않으면 데이터베이스에서 로드합니다.
+                    saveLastVehiclePassTimes();  // 그리고 파일에 저장합니다.
                 } else {
                     List<String> lines = Files.readAllLines(path);
-                    lines.forEach(line -> {
-                        String[] parts = line.split(",");
-                        Integer siteId = Integer.parseInt(parts[0]);
-                        Timestamp timestamp = Timestamp.valueOf(parts[1]);
-                        lastVehiclePassTimeMap.put(siteId, timestamp);
-                    });
+                    if (lines.isEmpty()) {
+                        logger.info("File exists but is empty. Loading data from DB.");
+                        loadLastVehiclePassTimesFromDB();  // 파일이 존재하지만 비어 있으면 데이터베이스에서 로드합니다.
+                        saveLastVehiclePassTimes();  // 그리고 파일에 저장합니다.
+                    } else {
+                        lines.forEach(line -> {
+                            String[] parts = line.split(",");
+                            Integer siteId = Integer.parseInt(parts[0]);
+                            Timestamp timestamp = Timestamp.valueOf(parts[1]);
+                            lastVehiclePassTimeMap.put(siteId, timestamp);
+                        });
+                    }
                 }
             } catch (IOException e) {
                 logger.error("Failed to load last processed times", e);
+            }
+        }
+
+        /**
+         * 데이터베이스에서 마지막 차량 통과 시간을 로드합니다.
+         */
+        private void loadLastVehiclePassTimesFromDB() {
+            String query = "SELECT instllc_id, clct_dt FROM srlk.tl_mvmneq_cur";
+
+            try (Connection connection = dataSource.getConnection();
+                 PreparedStatement preparedStatement = connection.prepareStatement(query);
+                 ResultSet resultSet = preparedStatement.executeQuery()) {
+
+                while (resultSet.next()) {
+                    Integer siteId = resultSet.getInt("instllc_id");
+                    Timestamp timestamp = resultSet.getTimestamp("clct_dt");
+                    lastVehiclePassTimeMap.put(siteId, timestamp);
+                }
+            } catch (SQLException e) {
+                logger.error("Failed to load last vehicle pass times from DB", e);
             }
         }
 

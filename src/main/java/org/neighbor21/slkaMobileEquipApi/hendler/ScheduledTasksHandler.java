@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 /**
@@ -42,9 +41,11 @@ public class ScheduledTasksHandler {
     private static final Logger logger = LoggerFactory.getLogger(ScheduledTasksHandler.class);
 
     // 마지막 차량 통과 시간 파일 저장 매니저
-    private final VehicleUtils.LastVehiclePassTimeManager lastVehiclePassTimeManager = new VehicleUtils.LastVehiclePassTimeManager();
+    @Autowired
+    private VehicleUtils.LastVehiclePassTimeManager lastVehiclePassTimeManager;
+    @Autowired
+    private ExecutorService executorService;
 
-    private final ExecutorService executorService = Executors.newFixedThreadPool(10);
     private long totalListSitesProcessTime = 0;
     private int totalListSitesProcessed = 0;
     private long totalIndividualVehiclesProcessTime = 0;
@@ -70,6 +71,7 @@ public class ScheduledTasksHandler {
     public void init() {
         lastVehiclePassTimeManager.loadLastVehiclePassTimes();
     }
+
 
     /**
      * 1시간 마다 List Sites 장소 목록을 호출하여 TL_MVMNEQ_CUR 테이블에 이동형 장비 설치위치 관리를 업데이트 한다.
